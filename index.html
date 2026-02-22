@@ -1,58 +1,20 @@
 <!DOCTYPE html>
 <html>
-<head>
+  <head>
     <meta charset="utf-8">
-    <title>神经动作电位 AR 教学版</title>
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
-</head>
+  </head>
+  <body style="margin: 0px; overflow: hidden;">
+    <a-scene embedded arjs='sourceType: webcam; debugUIEnabled: false;'>
+      
+      <a-marker preset="hiro">
+        <a-box position='0 0 0' width="2" height="0.05" depth="1.5" material='opacity: 0.5; color: #F5DEB3;'></a-box>
+        <a-sphere position="0 0.5 0" radius="0.2" color="#EF2D5E"></a-sphere>
+      </a-marker>
 
-<body style="margin: 0; overflow: hidden;">
-    <div style="position: fixed; top: 10px; width: 100%; text-align: center; z-index: 1;">
-        <button onclick="startDepolarization()" style="padding: 10px;">1. 去极化 (Na+内流)</button>
-        <button onclick="startRepolarization()" style="padding: 10px;">2. 复极化 (K+外流)</button>
-        <button onclick="reset()" style="padding: 10px;">重置</button>
-    </div>
-
-    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
-        <a-marker preset="hiro">
-            
-            <a-box position="0 0 0" width="3" height="0.05" depth="2" color="#F5DEB3" opacity="0.6"></a-box>
-
-            <a-cylinder id="na-gate" position="-0.8 0.1 0" radius="0.15" height="0.4" color="#FF4500"></a-cylinder>
-            
-            <a-cylinder id="k-gate" position="0.8 0.1 0" radius="0.15" height="0.4" color="#9370DB"></a-cylinder>
-
-            <a-sphere id="na-ion" position="-0.8 1 0" radius="0.08" color="#00BFFF" visible="false">
-                <a-animation id="na-anim" attribute="position" from="-0.8 1 0" to="-0.8 -0.5 0" dur="1000" repeat="indefinite" begin="go"></a-animation>
-            </a-sphere>
-
-            <a-sphere id="k-ion" position="0.8 -0.5 0" radius="0.08" color="#32CD32" visible="false">
-                <a-animation id="k-anim" attribute="position" from="0.8 -0.5 0" to="0.8 1 0" dur="1000" repeat="indefinite" begin="go"></a-animation>
-            </a-sphere>
-
-        </a-marker>
-        <a-entity camera></a-entity>
+      <a-entity camera></a-entity>
     </a-scene>
-
-    <script>
-        // 控制逻辑：点击按钮时发生的事情
-        function startDepolarization() {
-            document.getElementById('na-ion').setAttribute('visible', 'true');
-            document.getElementById('na-anim').emit('go');
-            document.getElementById('k-ion').setAttribute('visible', 'false');
-        }
-
-        function startRepolarization() {
-            document.getElementById('na-ion').setAttribute('visible', 'false');
-            document.getElementById('k-ion').setAttribute('visible', 'true');
-            document.getElementById('k-anim').emit('go');
-        }
-
-        function reset() {
-            location.reload();
-        }
-    </script>
-</body>
-
+  </body>
 </html>
