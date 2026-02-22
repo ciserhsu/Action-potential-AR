@@ -2,84 +2,126 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>神经动作电位 AR 终极演示版</title>
+    <title>神经动作电位 AR 交互课件</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/aframe/1.2.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@master/aframe/build/aframe-ar.js"></script>
     <style>
+        /* 屏幕 UI 样式 */
         .ui-panel { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 100; display:flex; gap:10px; }
-        button { padding: 15px; border-radius: 8px; border: none; background: #222; color: white; font-size: 14px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
-        #v-meter { position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.8); color: #00ff00; padding: 15px; border-radius: 10px; z-index:100; border: 1px solid #444; min-width: 120px; }
+        button { padding: 15px 25px; border-radius: 8px; border: none; background: #222; color: white; font-weight: bold; cursor: pointer; }
+        
+        /* 实时电位图容器 - 固定在屏幕左侧 */
+        #chart-container { 
+            position: fixed; top: 20px; left: 20px; width: 200px; height: 150px; 
+            background: rgba(0,0,0,0.8); border: 1px solid #444; border-radius: 10px; z-index: 100; padding: 10px;
+        }
+        canvas { width: 100%; height: 100%; }
+        #v-text { color: #00ff00; font-family: monospace; font-size: 20px; text-align: center; }
     </style>
 </head>
 
 <body style="margin: 0px; overflow: hidden;">
-    <div id="v-meter">
-        <div style="font-size: 10px; color: #888;">MEMBRANE POTENTIAL</div>
-        <div id="v-num" style="font-size: 28px; font-weight: bold;">-70 <small>mV</small></div>
-        <div id="v-status" style="font-size: 12px; color: #ffbb00;">Resting</div>
+    <div id="chart-container">
+        <div id="v-text">-70 mV</div>
+        <canvas id="apChart"></canvas>
     </div>
 
     <div class="ui-panel">
-        <button onclick="doDepolarize()" style="border-bottom: 4px solid #cc3300">1. 去极化</button>
-        <button onclick="doRepolarize()" style="border-bottom: 4px solid #0066cc">2. 复极化</button>
+        <button onclick="triggerDepol()" style="background: #cc3300;">1. 去极化</button>
+        <button onclick="triggerRepol()" style="background: #0066cc;">2. 复极化</button>
         <button onclick="location.reload()">重置</button>
     </div>
 
     <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
         <a-marker preset="hiro">
-            <a-box position="0 0 0" width="2.5" height="0.04" depth="1.5" color="#F5DEB3" opacity="0.6"></a-box>
+            <a-text value="Extracellular (Outside)" position="0 1 1" align="center" color="#FFF" scale="0.6 0.6 0.6"></a-text>
+            <a-box position="0 0 0" width="3" height="0.05" depth="2" color="#F5DEB3" opacity="0.8"></a-box>
+            <a-text value="Intracellular (Inside)" position="0 -0.5 1" align="center" color="#FFF" scale="0.6 0.6 0.6"></a-text>
 
-            <a-cylinder id="na-gate" position="-0.6 0.1 0" radius="0.15" height="0.3" color="#FF4500"></a-cylinder>
-            <a-cylinder id="k-gate" position="0.6 0.1 0" radius="0.15" height="0.3" color="#9370DB"></a-cylinder>
+            <a-cylinder id="na-gate" position="-0.7 0.1 0" radius="0.2" height="0.3" color="#FF4500"></a-cylinder>
+            <a-cylinder id="k-gate" position="0.7 0.1 0" radius="0.2" height="0.3" color="#9370DB"></a-cylinder>
 
-            <a-sphere id="na-ion" position="-0.6 0.8 0" radius="0.08" color="#00BFFF" visible="false"
-                      animation="property: position; from: -0.6 0.8 0; to: -0.6 -0.4 0; dur: 1000; loop: true; autoplay: false; pauseEvents: stopNow">
-            </a-sphere>
+            <a-entity id="na-flow" visible="false">
+                <a-sphere position="-0.7 0.8 0" radius="0.08" color="#00BFFF" 
+                          animation="property: position; from: -0.7 0.8 0; to: -0.7 -0.5 0; dur: 1000; loop: true; easing: linear;"></a-sphere>
+                <a-sphere position="-0.7 1.2 0" radius="0.08" color="#00BFFF" 
+                          animation="property: position; from: -0.7 1.2 0; to: -0.7 -0.1 0; dur: 1000; loop: true; easing: linear;"></a-sphere>
+            </a-entity>
 
-            <a-sphere id="k-ion" position="0.6 -0.4 0" radius="0.08" color="#32CD32" visible="false"
-                      animation="property: position; from: 0.6 -0.4 0; to: 0.6 0.8 0; dur: 1000; loop: true; autoplay: false; pauseEvents: stopNow">
-            </a-sphere>
-
-            <a-plane position="0 1.2 -1" rotation="0 0 0" width="1.8" height="1.2" color="#FFF" opacity="0.9">
-                <a-entity line="start: -0.8 -0.3 0.01; end: -0.4 -0.3 0.01; color: #999"></a-entity> 
-                <a-entity line="start: -0.4 -0.3 0.01; end: 0 0.4 0.01; color: #FF4500"></a-entity> 
-                <a-entity line="start: 0 0.4 0.01; end: 0.5 -0.4 0.01; color: #0066cc"></a-entity> 
-                <a-sphere id="ap-dot" position="-0.8 -0.3 0.02" radius="0.05" color="red"></a-sphere>
-            </a-plane>
+            <a-entity id="k-flow" visible="false">
+                <a-sphere position="0.7 -0.5 0" radius="0.08" color="#32CD32" 
+                          animation="property: position; from: 0.7 -0.5 0; to: 0.7 0.8 0; dur: 1000; loop: true; easing: linear;"></a-sphere>
+                <a-sphere position="0.7 -0.1 0" radius="0.08" color="#32CD32" 
+                          animation="property: position; from: 0.7 -0.1 0; to: 0.7 1.2 0; dur: 1000; loop: true; easing: linear;"></a-sphere>
+            </a-entity>
         </a-marker>
         <a-entity camera></a-entity>
     </a-scene>
 
     <script>
-        function doDepolarize() {
-            // 停止钾，启动钠
-            document.getElementById('k-ion').setAttribute('visible', 'false');
-            document.getElementById('k-ion').emit('stopNow');
+        // 绘图逻辑
+        const canvas = document.getElementById('apChart');
+        const ctx = canvas.getContext('2d');
+        const vText = document.getElementById('v-text');
+        let points = [70]; // 初始静息电位
+        let currentV = -70;
+
+        function drawChart() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = '#00ff00';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, 100 - (points[0] + 80)/1.5);
+            for(let i=1; i<points.length; i++) {
+                ctx.lineTo(i * (canvas.width/50), 100 - (points[i] + 80)/1.5);
+            }
+            ctx.stroke();
+            if(points.length > 50) points.shift();
+        }
+
+        function triggerDepol() {
+            // AR 动画切换
+            document.getElementById('na-flow').setAttribute('visible', 'true');
+            document.getElementById('k-flow').setAttribute('visible', 'false');
             
-            var na = document.getElementById('na-ion');
-            na.setAttribute('visible', 'true');
-            na.components.animation.play(); // 强制播放
-
-            // UI
-            document.getElementById('v-num').innerHTML = "+30 <small>mV</small>";
-            document.getElementById('v-status').innerText = "Depolarization";
-            document.getElementById('ap-dot').setAttribute('position', '0 0.4 0.02');
+            // 模拟数值变化
+            let timer = setInterval(() => {
+                if(currentV < 30) {
+                    currentV += 5;
+                    points.push(currentV);
+                    vText.innerText = currentV + " mV";
+                    drawChart();
+                } else {
+                    clearInterval(timer);
+                }
+            }, 50);
         }
 
-        function doRepolarize() {
-            // 停止钠，启动钾
-            document.getElementById('na-ion').setAttribute('visible', 'false');
-            document.getElementById('na-ion').emit('stopNow');
+        function triggerRepol() {
+            // AR 动画切换
+            document.getElementById('na-flow').setAttribute('visible', 'false');
+            document.getElementById('k-flow').setAttribute('visible', 'true');
 
-            var k = document.getElementById('k-ion');
-            k.setAttribute('visible', 'true');
-            k.components.animation.play(); // 强制播放
-
-            // UI
-            document.getElementById('v-num').innerHTML = "-80 <small>mV</small>";
-            document.getElementById('v-status').innerText = "Repolarization";
-            document.getElementById('ap-dot').setAttribute('position', '0.5 -0.4 0.02');
+            // 模拟数值变化
+            let timer = setInterval(() => {
+                if(currentV > -80) {
+                    currentV -= 5;
+                    points.push(currentV);
+                    vText.innerText = currentV + " mV";
+                    drawChart();
+                } else {
+                    clearInterval(timer);
+                }
+            }, 50);
         }
+
+        // 初始化背景
+        setInterval(() => {
+            if(points.length < 50) {
+                points.push(currentV);
+                drawChart();
+            }
+        }, 100);
     </script>
 </body>
 </html>
