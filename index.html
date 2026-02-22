@@ -2,19 +2,19 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>神经动作电位 AR - 黄金比例版</title>
+    <title>动作电位机制 WebAR - 垂直逻辑版</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/aframe/1.2.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@master/aframe/build/aframe-ar.js"></script>
     <style>
         #monitor-box {
             position: fixed; top: 10px; left: 10px; width: 220px; height: 150px;
-            background: rgba(255, 255, 255, 0.9); border: 2px solid #333; border-radius: 8px; z-index: 1000;
+            background: rgba(255, 255, 255, 0.95); border: 2px solid #333; border-radius: 8px; z-index: 1000;
         }
-        #bg-image { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0.2; object-fit: contain; }
+        #bg-image { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0.25; object-fit: contain; }
         #wave-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1001; }
         #v-display { position: absolute; bottom: 5px; right: 10px; color: #d32f2f; font-family: monospace; font-weight: bold; font-size: 18px; z-index: 1002; }
         .controls { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 1000; display:flex; gap:8px; }
-        button { padding: 12px 14px; border-radius: 20px; border: none; font-weight: bold; color: white; cursor: pointer; font-size: 12px; }
+        button { padding: 12px 14px; border-radius: 20px; border: none; font-weight: bold; color: white; cursor: pointer; font-size: 12px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
         .btn-na { background: #d32f2f; } .btn-k { background: #303f9f; } .btn-reset { background: #444; }
     </style>
 </head>
@@ -27,8 +27,8 @@
     </div>
 
     <div class="controls">
-        <button class="btn-na" onclick="startDepol()">1. 去极化</button>
-        <button class="btn-k" onclick="startRepol()">2. 复极化</button>
+        <button class="btn-na" onclick="startDepol()">1. 去极化 (Na+内流)</button>
+        <button class="btn-k" onclick="startRepol()">2. 复极化 (K+外流)</button>
         <button class="btn-reset" onclick="location.reload()">重置</button>
     </div>
 
@@ -37,26 +37,28 @@
             
             <a-entity scale="0.4 0.4 0.4" position="0 0 0">
                 
-                <a-text value="Extracellular (膜外)" position="0 1.2 1.5" align="center" color="#00ffff" scale="1.5 1.5 1.5" rotation="-90 0 0"></a-text>
-                <a-text value="Intracellular (膜内)" position="0 -1.0 1.5" align="center" color="#ff00ff" scale="1.5 1.5 1.5" rotation="-90 0 0"></a-text>
+                <a-text value="EXTRACELLULAR (膜外)" position="0 1.2 0" align="center" color="#00fbff" width="6" rotation="-90 0 0"></a-text>
+                
+                <a-box position="0 0 0" width="3" height="0.1" depth="2" color="#e3c4a8" opacity="0.9"></a-box>
 
-                <a-box position="0 0 0" width="2.5" height="0.1" depth="1.8" color="#e3c4a8" opacity="0.8"></a-box>
+                <a-text value="INTRACELLULAR (膜内)" position="0 -1.2 0" align="center" color="#ff00ff" width="6" rotation="-90 0 0"></a-text>
 
-                <a-cylinder id="na-gate" position="-0.6 0.15 0" radius="0.15" height="0.4" color="#d32f2f">
-                    <a-text value="Na+" position="0 0.5 0" align="center" scale="1 1 1" color="#FFF" rotation="-90 0 0"></a-text>
+                <a-cylinder position="-0.7 0.1 0" radius="0.2" height="0.4" color="#d32f2f">
+                    <a-text value="Na+ Channel" position="0 0.3 0.3" align="center" scale="0.8 0.8 0.8" rotation="-90 0 0"></a-text>
                 </a-cylinder>
-                <a-cylinder id="k-gate" position="0.6 0.15 0" radius="0.15" height="0.4" color="#303f9f">
-                    <a-text value="K+" position="0 0.5 0" align="center" scale="1 1 1" color="#FFF" rotation="-90 0 0"></a-text>
+
+                <a-cylinder position="0.7 0.1 0" radius="0.2" height="0.4" color="#303f9f">
+                    <a-text value="K+ Channel" position="0 0.3 0.3" align="center" scale="0.8 0.8 0.8" rotation="-90 0 0"></a-text>
                 </a-cylinder>
 
                 <a-entity id="na-group" visible="false">
-                    <a-sphere position="-0.6 1.0 0" radius="0.08" color="#00fbff" animation="property: position; from: -0.6 1.2 0; to: -0.6 -0.8 0; dur: 800; loop: true; easing: linear"></a-sphere>
-                    <a-sphere position="-0.6 1.5 0.1" radius="0.08" color="#00fbff" animation="property: position; from: -0.6 1.5 0.1; to: -0.6 -0.5 0.1; dur: 800; loop: true; easing: linear; delay: 250"></a-sphere>
+                    <a-sphere position="-0.7 1.5 0" radius="0.08" color="#00fbff" animation="property: position; from: -0.7 1.5 0; to: -0.7 -1.5 0; dur: 1000; loop: true; easing: linear"></a-sphere>
+                    <a-sphere position="-0.7 2.2 0" radius="0.08" color="#00fbff" animation="property: position; from: -0.7 2.2 0; to: -0.7 -0.8 0; dur: 1000; loop: true; easing: linear; delay: 300"></a-sphere>
                 </a-entity>
 
                 <a-entity id="k-group" visible="false">
-                    <a-sphere position="0.6 -0.8 0" radius="0.08" color="#00ff44" animation="property: position; from: 0.6 -0.8 0; to: 0.6 1.2 0; dur: 800; loop: true; easing: linear"></a-sphere>
-                    <a-sphere position="0.6 -1.2 0.1" radius="0.08" color="#00ff44" animation="property: position; from: 0.6 -1.2 0.1; to: 0.6 0.8 0.1; dur: 800; loop: true; easing: linear; delay: 250"></a-sphere>
+                    <a-sphere position="0.7 -1.5 0" radius="0.08" color="#00ff44" animation="property: position; from: 0.7 -1.5 0; to: 0.7 1.5 0; dur: 1000; loop: true; easing: linear"></a-sphere>
+                    <a-sphere position="0.7 -2.2 0" radius="0.08" color="#00ff44" animation="property: position; from: 0.7 -2.2 0; to: 0.7 0.8 0; dur: 1000; loop: true; easing: linear; delay: 300"></a-sphere>
                 </a-entity>
             </a-entity>
 
