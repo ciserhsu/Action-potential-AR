@@ -2,9 +2,9 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>生理学AR-严谨逻辑版</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/aframe/1.2.0/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@master/aframe/build/aframe-ar.js"></script>
+    <title>生理学AR-教学逻辑版</title>
+    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
     <style>
         #monitor-box {
             position: fixed; top: 10px; left: 10px; width: 180px; height: 120px;
@@ -13,12 +13,12 @@
         #v-display { position: absolute; top: 5px; right: 10px; color: #00ff00; font-family: monospace; font-size: 16px; font-weight: bold; }
         #wave-canvas { width: 100%; height: 100%; }
 
+        /* 去掉重置，只保留三个生理阶段按键 */
         .controls { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 999; display: flex; gap: 8px; }
         button { padding: 12px 14px; border-radius: 8px; border: none; font-weight: bold; color: white; cursor: pointer; font-size: 13px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
         .btn-na { background: #ff4444; } 
         .btn-k { background: #4444ff; }
-        .btn-pump { background: #4caf50; } /* 恢复按钮使用绿色 */
-        .btn-reset { background: #666; }
+        .btn-pump { background: #4caf50; } 
     </style>
 </head>
 
@@ -32,33 +32,33 @@
         <button class="btn-na" onclick="startDepol()">1. 去极化</button>
         <button class="btn-k" onclick="startRepol()">2. 复极化</button>
         <button class="btn-pump" onclick="startRecovery()">3. 恢复期</button>
-        <button class="btn-reset" onclick="location.reload()">重置</button>
     </div>
 
-    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
-        <a-marker type="pattern" url="pattern-image_0528fe.patt">
+    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix;">
+        
+        <a-marker type="pattern" url="./pattern-image_0528fe.patt">
             
-            <a-entity rotation="-90 0 0" position="0 0 -0.3" scale="0.18 0.18 0.18">
+            <a-entity rotation="-90 0 0" position="0 0 -0.2" scale="0.15 0.15 0.15">
                 
-                <a-text value="EXTRACELLULAR" position="0 1.8 0" align="center" color="#00ffff" width="8"></a-text>
+                <a-text value="EXTRACELLULAR" position="0 2.2 0" align="center" color="#00ffff" width="10"></a-text>
                 
-                <a-box position="0 0 0" width="4" height="0.25" depth="1.5" color="#f5d6ba" material="opacity: 0.95;">
-                    <a-cylinder position="-1.2 0 0" radius="0.3" height="0.5" color="#ff4444">
-                        <a-text value="Na+" position="0 0.4 0.1" align="center" width="5"></a-text>
+                <a-box position="0 0 0" width="4.5" height="0.3" depth="1.8" color="#f5d6ba">
+                    <a-cylinder position="-1.2 0 0" radius="0.35" height="0.6" color="#ff4444">
+                        <a-text value="Na+" position="0 0.5 0.1" align="center" width="6"></a-text>
                     </a-cylinder>
-                    <a-cylinder position="1.2 0 0" radius="0.3" height="0.5" color="#4444ff">
-                        <a-text value="K+" position="0 0.4 0.1" align="center" width="5"></a-text>
+                    <a-cylinder position="1.2 0 0" radius="0.35" height="0.6" color="#4444ff">
+                        <a-text value="K+" position="0 0.5 0.1" align="center" width="6"></a-text>
                     </a-cylinder>
                 </a-box>
 
-                <a-text value="INTRACELLULAR" position="0 -1.8 0" align="center" color="#ff00ff" width="8"></a-text>
+                <a-text value="INTRACELLULAR" position="0 -2.2 0" align="center" color="#ff00ff" width="10"></a-text>
 
                 <a-entity id="na-ions" visible="false">
-                    <a-sphere position="-1.2 1.5 0" radius="0.1" color="#00fbff" animation="property: position; from: -1.2 1.5 0; to: -1.2 -1.5 0; dur: 1000; loop: true"></a-sphere>
+                    <a-sphere position="-1.2 2.0 0" radius="0.12" color="#00fbff" animation="property: position; from: -1.2 2.0 0; to: -1.2 -2.0 0; dur: 1000; loop: true"></a-sphere>
                 </a-entity>
                 
                 <a-entity id="k-ions" visible="false">
-                    <a-sphere position="1.2 -1.5 0" radius="0.1" color="#00ff00" animation="property: position; from: 1.2 -1.5 0; to: 1.2 1.5 0; dur: 1000; loop: true"></a-sphere>
+                    <a-sphere position="1.2 -2.0 0" radius="0.12" color="#00ff00" animation="property: position; from: 1.2 -2.0 0; to: 1.2 2.0 0; dur: 1000; loop: true"></a-sphere>
                 </a-entity>
 
             </a-entity>
@@ -80,19 +80,16 @@
             ctx.beginPath(); ctx.moveTo(points[0].x, points[0].y);
             for(let p of points) ctx.lineTo(p.x, p.y);
             ctx.stroke();
-            // 画当前端点
             let last = points[points.length-1];
             ctx.fillStyle = "red"; ctx.beginPath(); ctx.arc(last.x, last.y, 4, 0, Math.PI*2); ctx.fill();
         }
 
-        // 1. 去极化
         function startDepol() {
             if(isAnimating || currentV > -70) return;
             isAnimating = true;
             document.getElementById('na-ions').setAttribute('visible', 'true');
-            let t = 0;
             let timer = setInterval(() => {
-                t++; currentV += 5;
+                currentV += 5;
                 points.push({x: points[points.length-1].x + 3, y: 100 - ((currentV+70)*0.8)});
                 vDisplay.innerText = Math.min(30, currentV) + " mV";
                 draw();
@@ -100,7 +97,6 @@
             }, 50);
         }
 
-        // 2. 复极化 (含超极化到-80mV)
         function startRepol() {
             if(isAnimating || currentV < 30) return;
             isAnimating = true;
@@ -115,7 +111,6 @@
             }, 50);
         }
 
-        // 3. 恢复期 (从-80mV缓慢回升到-70mV)
         function startRecovery() {
             if(isAnimating || currentV != -80) return;
             isAnimating = true;
@@ -125,8 +120,13 @@
                 points.push({x: points[points.length-1].x + 3, y: 100 - ((currentV+70)*0.8)});
                 vDisplay.innerText = currentV + " mV";
                 draw();
-                if(currentV >= -70) { clearInterval(timer); isAnimating = false; }
-            }, 100); // 恢复期较慢，体现生理过程
+                if(currentV >= -70) { 
+                    clearInterval(timer); 
+                    isAnimating = false; 
+                    // 逻辑闭环：当回升到-70mV后，如果图线太长，可以在此加入清屏逻辑或允许继续。
+                    // 建议此时不强制reload，让学生看到稳定的-70mV直线。
+                }
+            }, 100);
         }
 
         canvas.width = 180; canvas.height = 120; draw();
