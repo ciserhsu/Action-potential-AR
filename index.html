@@ -2,22 +2,20 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>神经电位 AR 教学 - 逻辑终极版</title>
+    <title>神经电位 AR 教学 - 稳定版</title>
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@master/aframe/build/aframe-ar.js"></script>
     
     <style>
-        /* 电位图：固定左上角 */
         #monitor-box {
-            position: fixed; top: 10px; left: 10px; width: 180px; height: 120px;
+            position: fixed; top: 10px; left: 10px; width: 160px; height: 110px;
             background: rgba(0,0,0,0.85); border: 2px solid #00ff00; border-radius: 8px; z-index: 1000;
         }
-        #v-display { position: absolute; top: 5px; right: 10px; color: #00ff00; font-family: monospace; font-size: 16px; font-weight: bold; }
+        #v-display { position: absolute; top: 5px; right: 10px; color: #00ff00; font-family: monospace; font-size: 14px; font-weight: bold; }
         #wave-canvas { width: 100%; height: 100%; }
 
-        /* 教学按键：保留您满意的样式，去掉了重置 */
-        .controls { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 1000; display: flex; gap: 10px; }
-        button { padding: 12px 18px; border-radius: 10px; border: none; font-weight: bold; color: white; cursor: pointer; font-size: 14px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .controls { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 1000; display: flex; gap: 8px; }
+        button { padding: 12px 14px; border-radius: 8px; border: none; font-weight: bold; color: white; cursor: pointer; font-size: 13px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
         .btn-na { background: #ff4444; } 
         .btn-k { background: #4444ff; }
         .btn-recovery { background: #4caf50; } 
@@ -37,19 +35,18 @@
     </div>
 
     <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
-        
         <a-marker type="pattern" url="./pattern-image_0528fe.patt">
             
             <a-entity rotation="-90 0 0" position="0 0 0" scale="0.12 0.12 0.12">
                 
                 <a-text value="EXTRACELLULAR" position="0 2.5 0" align="center" color="#00ffff" width="12"></a-text>
                 
-                <a-box position="0 0 0" width="5" height="0.3" depth="2" color="#f5d6ba">
+                <a-box position="0 0 0" width="5" height="0.4" depth="2" color="#f5d6ba">
                     <a-cylinder position="-1.5 0 0" radius="0.4" height="0.8" color="#ff4444">
-                        <a-text value="Na+" position="0 0.6 0.1" align="center" width="8"></a-text>
+                        <a-text value="Na+" position="0 0.6 0.2" align="center" width="8"></a-text>
                     </a-cylinder>
                     <a-cylinder position="1.5 0 0" radius="0.4" height="0.8" color="#4444ff">
-                        <a-text value="K+" position="0 0.6 0.1" align="center" width="8"></a-text>
+                        <a-text value="K+" position="0 0.6 0.2" align="center" width="8"></a-text>
                     </a-cylinder>
                 </a-box>
 
@@ -72,7 +69,7 @@
         const canvas = document.getElementById('wave-canvas');
         const ctx = canvas.getContext('2d');
         const vDisplay = document.getElementById('v-display');
-        let points = [{x: 5, y: 100}]; 
+        let points = [{x: 5, y: 90}]; 
         let currentV = -70;
         let isAnimating = false;
 
@@ -86,21 +83,19 @@
             ctx.fillStyle = "red"; ctx.beginPath(); ctx.arc(last.x, last.y, 4, 0, Math.PI*2); ctx.fill();
         }
 
-        // 1. 去极化：Na+内流，电位飙升
         function startDepol() {
             if(isAnimating || currentV > -70) return;
             isAnimating = true;
             document.getElementById('na-ions').setAttribute('visible', 'true');
             let timer = setInterval(() => {
                 currentV += 5;
-                points.push({x: points[points.length-1].x + 3, y: 100 - ((currentV+70)*0.8)});
+                points.push({x: points[points.length-1].x + 3, y: 90 - ((currentV+70)*0.7)});
                 vDisplay.innerText = Math.min(30, currentV) + " mV";
                 draw();
                 if(currentV >= 30) { clearInterval(timer); isAnimating = false; }
             }, 50);
         }
 
-        // 2. 复极化：Na+道关，K+外流，电位回落并超极化
         function startRepol() {
             if(isAnimating || currentV < 30) return;
             isAnimating = true;
@@ -108,31 +103,27 @@
             document.getElementById('k-ions').setAttribute('visible', 'true');
             let timer = setInterval(() => {
                 currentV -= 5;
-                points.push({x: points[points.length-1].x + 3, y: 100 - ((currentV+70)*0.8)});
+                points.push({x: points[points.length-1].x + 3, y: 90 - ((currentV+70)*0.7)});
                 vDisplay.innerText = currentV + " mV";
                 draw();
                 if(currentV <= -80) { clearInterval(timer); isAnimating = false; }
             }, 50);
         }
 
-        // 3. 恢复期：K+道关，电位回升至静息 -70mV
         function startRecovery() {
             if(isAnimating || currentV != -80) return;
             isAnimating = true;
             document.getElementById('k-ions').setAttribute('visible', 'false');
             let timer = setInterval(() => {
-                currentV += 1; // 缓慢回升
-                points.push({x: points[points.length-1].x + 3, y: 100 - ((currentV+70)*0.8)});
+                currentV += 1;
+                points.push({x: points[points.length-1].x + 3, y: 90 - ((currentV+70)*0.7)});
                 vDisplay.innerText = currentV + " mV";
                 draw();
-                if(currentV >= -70) { 
-                    clearInterval(timer); 
-                    isAnimating = false; 
-                }
+                if(currentV >= -70) { clearInterval(timer); isAnimating = false; }
             }, 100);
         }
 
-        canvas.width = 180; canvas.height = 120; draw();
+        canvas.width = 160; canvas.height = 110; draw();
     </script>
 </body>
 </html>
