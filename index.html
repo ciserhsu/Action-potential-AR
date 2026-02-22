@@ -2,28 +2,30 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>神经生理 AR 教学 - 三明治结构版</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/aframe/1.2.0/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@master/aframe/build/aframe-ar.js"></script>
+    <title>神经动作电位 AR 教学 - 垂直三明治版</title>
+    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.1.4/dist/mindar-image-aframe.prod.js"></script>
+    
     <style>
-        #monitor-box {
-            position: fixed; top: 10px; left: 10px; width: 220px; height: 160px;
-            background: rgba(255, 255, 255, 0.95); border: 2px solid #333; border-radius: 8px; z-index: 1000;
+        /* 实时电位图：固定在左上角 */
+        #monitor {
+            position: fixed; top: 10px; left: 10px; width: 220px; height: 150px;
+            background: rgba(0,0,0,0.8); border: 2px solid #555; border-radius: 10px; z-index: 1000;
         }
-        #bg-image { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0.2; object-fit: contain; }
-        #wave-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1001; }
-        #v-display { position: absolute; bottom: 5px; right: 10px; color: #d32f2f; font-family: monospace; font-weight: bold; font-size: 18px; z-index: 1002; }
-        .controls { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 1000; display:flex; gap:10px; }
-        button { padding: 15px 18px; border-radius: 12px; border: none; font-weight: bold; color: white; cursor: pointer; font-size: 14px; box-shadow: 0 4px 10px rgba(0,0,0,0.4); }
-        .btn-na { background: #E53935; } .btn-k { background: #3949AB; } .btn-reset { background: #424242; }
+        #wave-canvas { width: 100%; height: 100%; }
+        #v-text { position: absolute; top: 5px; right: 10px; color: #00ff00; font-family: monospace; font-size: 18px; }
+
+        /* 控制按钮 */
+        .controls { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; display:flex; gap:15px; }
+        button { padding: 15px 20px; border-radius: 10px; border: none; font-weight: bold; color: white; cursor: pointer; }
+        .btn-na { background: #ff4444; } .btn-k { background: #4444ff; }
     </style>
 </head>
 
-<body style="margin: 0px; overflow: hidden;">
-    <div id="monitor-box">
-        <img id="bg-image" src="https://raw.githubusercontent.com/ciserhsu/Action-potential-AR/main/image_0528fe.png">
+<body>
+    <div id="monitor">
+        <div id="v-text">-70 mV</div>
         <canvas id="wave-canvas"></canvas>
-        <div id="v-display">-70 mV</div>
     </div>
 
     <div class="controls">
@@ -31,88 +33,83 @@
         <button class="btn-k" onclick="startRepol()">2. 复极化 (K+外流)</button>
     </div>
 
-    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false; trackingMethod: best; maxDetectionRate: 60; canvasWidth: 1280; canvasHeight: 720;">
+    <a-scene mindar-image="imageTargetSrc: https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.1.4/examples/image-tracking/assets/card-example/card.mind;" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
         
-        <a-marker type="pattern" url="./pattern-image_0528fe.patt" smooth="true" smoothCount="10" smoothTolerance="0.01" smoothThreshold="5">
-            
-            <a-entity position="0 0 0" scale="0.5 0.5 0.5">
-                
-                <a-entity position="0 1.5 0">
-                    <a-text value="EXTRACELLULAR (膜外)" align="center" color="#00E5FF" width="5" rotation="-90 0 0"></a-text>
-                    <a-entity id="na-ions" visible="false">
-                        <a-sphere position="-0.7 0.5 0" radius="0.08" color="#00fbff" animation="property: position; from: -0.7 0.5 0; to: -0.7 -2.5 0; dur: 1200; loop: true; easing: linear"></a-sphere>
-                        <a-sphere position="-0.7 1.2 0.2" radius="0.08" color="#00fbff" animation="property: position; from: -0.7 1.2 0.2; to: -0.7 -1.8 0.2; dur: 1200; loop: true; easing: linear; delay: 400"></a-sphere>
-                    </a-entity>
-                </a-entity>
+        <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-                <a-box position="0 0 0" width="3.2" height="0.2" depth="2" color="#D7CCC8" opacity="0.9">
-                    <a-cylinder position="-0.7 0 0" radius="0.25" height="0.5" color="#FF5252">
-                        <a-text value="Na+ Gate" position="0 0.4 0.3" align="center" scale="0.8 0.8 0.8" rotation="-90 0 0" color="#000"></a-text>
+        <a-entity mindar-image-target="targetIndex: 0">
+            
+            <a-entity rotation="0 0 0" position="0 0 0">
+                
+                <a-text value="EXTRACELLULAR (Outside)" position="0 1.2 0" align="center" color="#00ffff" width="4"></a-text>
+                
+                <a-box position="0 0 0" width="2.5" height="0.1" depth="1.5" color="#e3c4a8" opacity="0.9">
+                    <a-cylinder position="-0.6 0 0" radius="0.2" height="0.3" color="#ff0000">
+                        <a-text value="Na+" position="0 0.3 0" align="center" width="3"></a-text>
                     </a-cylinder>
-                    <a-cylinder position="0.7 0 0" radius="0.25" height="0.5" color="#7E57C2">
-                        <a-text value="K+ Gate" position="0 0.4 0.3" align="center" scale="0.8 0.8 0.8" rotation="-90 0 0" color="#000"></a-text>
+                    <a-cylinder position="0.6 0 0" radius="0.2" height="0.3" color="#0000ff">
+                        <a-text value="K+" position="0 0.3 0" align="center" width="3"></a-text>
                     </a-cylinder>
                 </a-box>
 
-                <a-entity position="0 -1.5 0">
-                    <a-text value="INTRACELLULAR (膜内)" align="center" color="#F48FB1" width="5" rotation="-90 0 0"></a-text>
-                    <a-entity id="k-ions" visible="false">
-                        <a-sphere position="0.7 -0.5 0" radius="0.08" color="#64DD17" animation="property: position; from: 0.7 -0.5 0; to: 0.7 2.5 0; dur: 1200; loop: true; easing: linear"></a-sphere>
-                        <a-sphere position="0.7 -1.2 -0.2" radius="0.08" color="#64DD17" animation="property: position; from: 0.7 -1.2 -0.2; to: 0.7 1.8 -0.2; dur: 1200; loop: true; easing: linear; delay: 400"></a-sphere>
-                    </a-entity>
+                <a-text value="INTRACELLULAR (Inside)" position="0 -1.0 0" align="center" color="#ff00ff" width="4"></a-text>
+
+                <a-entity id="na-flow" visible="false">
+                    <a-sphere position="-0.6 1.0 0" radius="0.06" color="#00fbff" animation="property: position; from: -0.6 1.0 0; to: -0.6 -0.8 0; dur: 800; loop: true"></a-sphere>
+                    <a-sphere position="-0.6 1.5 0" radius="0.06" color="#00fbff" animation="property: position; from: -0.6 1.5 0; to: -0.6 -0.3 0; dur: 800; loop: true; delay: 200"></a-sphere>
+                </a-entity>
+
+                <a-entity id="k-flow" visible="false">
+                    <a-sphere position="0.6 -0.8 0" radius="0.06" color="#00ff00" animation="property: position; from: 0.6 -0.8 0; to: 0.6 1.0 0; dur: 800; loop: true"></a-sphere>
+                    <a-sphere position="0.6 -0.3 0" radius="0.06" color="#00ff00" animation="property: position; from: 0.6 -0.3 0; to: 0.6 1.5 0; dur: 800; loop: true; delay: 200"></a-sphere>
                 </a-entity>
 
             </a-entity>
         </a-marker>
-        <a-entity camera></a-entity>
     </a-scene>
 
     <script>
         const canvas = document.getElementById('wave-canvas');
         const ctx = canvas.getContext('2d');
-        const vDisplay = document.getElementById('v-display');
-        let points = [{x: 10, y: 125}]; let currentV = -70; let animationActive = false;
+        const vText = document.getElementById('v-text');
+        let points = [{x: 0, y: 120}]; 
+        let currentV = -70;
 
-        function drawCurve() {
+        function drawWave() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.beginPath(); ctx.strokeStyle = "#1976D2"; ctx.lineWidth = 4;
+            ctx.strokeStyle = "#00ff00"; ctx.lineWidth = 3;
+            ctx.beginPath();
             ctx.moveTo(points[0].x, points[0].y);
-            for(let i=1; i<points.length; i++) ctx.lineTo(points[i].x, points[i].y);
+            for(let p of points) ctx.lineTo(p.x, p.y);
             ctx.stroke();
-            let last = points[points.length-1];
-            ctx.fillStyle = "red"; ctx.beginPath(); ctx.arc(last.x, last.y, 6, 0, Math.PI*2); ctx.fill();
         }
 
         function startDepol() {
-            if(animationActive || currentV >= 30) return;
-            document.getElementById('na-ions').setAttribute('visible', 'true');
-            document.getElementById('k-ions').setAttribute('visible', 'false');
-            animationActive = true;
-            let step = 0;
+            document.getElementById('na-flow').setAttribute('visible', 'true');
+            document.getElementById('k-flow').setAttribute('visible', 'false');
+            let i = 0;
             let timer = setInterval(() => {
-                step++; currentV += 5;
-                points.push({x: points[points.length-1].x + 4, y: points[points.length-1].y - 6});
-                vDisplay.innerText = Math.min(30, currentV) + " mV";
-                drawCurve();
-                if(currentV >= 30) { clearInterval(timer); animationActive = false; }
-            }, 60);
+                i++; currentV += 5;
+                points.push({x: points[points.length-1].x + 5, y: 120 - (i*5)});
+                vText.innerText = Math.min(30, currentV) + " mV";
+                drawWave();
+                if(currentV >= 30) clearInterval(timer);
+            }, 50);
         }
 
         function startRepol() {
-            if(animationActive || currentV <= -80) return;
-            document.getElementById('na-ions').setAttribute('visible', 'false');
-            document.getElementById('k-ions').setAttribute('visible', 'true');
-            animationActive = true;
-            let step = 0;
+            document.getElementById('na-flow').setAttribute('visible', 'false');
+            document.getElementById('k-flow').setAttribute('visible', 'true');
+            let i = 0;
             let timer = setInterval(() => {
-                step++; currentV -= 6;
-                points.push({x: points[points.length-1].x + 4, y: points[points.length-1].y + 7});
-                vDisplay.innerText = Math.max(-80, currentV) + " mV";
-                drawCurve();
-                if(currentV <= -80) { clearInterval(timer); animationActive = false; }
-            }, 60);
+                i++; currentV -= 6;
+                points.push({x: points[points.length-1].x + 5, y: points[points.length-1].y + 7});
+                vText.innerText = Math.max(-80, currentV) + " mV";
+                drawWave();
+                if(currentV <= -80) clearInterval(timer);
+            }, 50);
         }
-        canvas.width = 220; canvas.height = 160; drawCurve();
+        canvas.width = 220; canvas.height = 150; drawWave();
     </script>
 </body>
 </html>
