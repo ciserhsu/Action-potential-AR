@@ -2,26 +2,26 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>神经动作电位 AR 教学终极版</title>
+    <title>神经动作电位 AR 交互教学</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/aframe/1.2.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@master/aframe/build/aframe-ar.js"></script>
     <style>
         .ui-panel { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 100; display:flex; gap:10px; }
-        button { padding: 15px; border-radius: 8px; border: none; background: #222; color: white; font-size: 14px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        button { padding: 15px; border-radius: 8px; border: none; background: #222; color: white; font-size: 14px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); cursor: pointer; }
         #v-meter { position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.8); color: #00ff00; padding: 15px; border-radius: 10px; z-index:100; border: 1px solid #444; min-width: 120px; }
     </style>
 </head>
 
 <body style="margin: 0px; overflow: hidden;">
     <div id="v-meter">
-        <div style="font-size: 10px; color: #888; text-transform: uppercase;">Membrane Potential</div>
+        <div style="font-size: 10px; color: #888;">MEMBRANE POTENTIAL</div>
         <div id="v-num" style="font-size: 28px; font-weight: bold;">-70 <small>mV</small></div>
         <div id="v-status" style="font-size: 12px; color: #ffbb00;">Resting</div>
     </div>
 
     <div class="ui-panel">
-        <button onclick="toDepolarize()" style="border-bottom: 4px solid #cc3300">1. 去极化</button>
-        <button onclick="toRepolarize()" style="border-bottom: 4px solid #0066cc">2. 复极化</button>
+        <button onclick="playDepolarization()" style="border-bottom: 4px solid #cc3300">1. 去极化</button>
+        <button onclick="playRepolarization()" style="border-bottom: 4px solid #0066cc">2. 复极化</button>
         <button onclick="location.reload()">重置</button>
     </div>
 
@@ -29,25 +29,23 @@
         <a-marker preset="hiro">
             <a-box position="0 0 0" width="3" height="0.06" depth="2" color="#F5DEB3" opacity="0.6"></a-box>
 
-            <a-cylinder id="na-gate" position="-0.7 0.15 0" radius="0.18" height="0.4" color="#FF4500">
-                <a-text value="Na+ Gate" align="center" position="0 0.4 0" scale="0.4 0.4 0.4" color="#000"></a-text>
-            </a-cylinder>
-            
-            <a-cylinder id="k-gate" position="0.7 0.15 0" radius="0.18" height="0.4" color="#9370DB">
-                <a-text value="K+ Gate" align="center" position="0 0.4 0" scale="0.4 0.4 0.4" color="#000"></a-text>
-            </a-cylinder>
+            <a-cylinder id="na-gate" position="-0.7 0.15 0" radius="0.18" height="0.4" color="#FF4500"></a-cylinder>
+            <a-cylinder id="k-gate" position="0.7 0.15 0" radius="0.18" height="0.4" color="#9370DB"></a-cylinder>
 
-            <a-sphere id="na-ion" position="-0.7 1.2 0" radius="0.08" color="#00BFFF" visible="false">
-                <a-animation id="na-anim" attribute="position" from="-0.7 1.2 0" to="-0.7 -0.5 0" dur="800" repeat="indefinite" begin="go"></a-animation>
+            <a-sphere id="na-ion" position="-0.7 1.2 0" radius="0.08" color="#00BFFF" visible="false"
+                      animation="property: position; from: -0.7 1.2 0; to: -0.7 -0.5 0; dur: 800; loop: true; autoplay: false; pauseEvents: stopAnim">
             </a-sphere>
 
-            <a-sphere id="k-ion" position="0.7 -0.5 0" radius="0.08" color="#32CD32" visible="false">
-                <a-animation id="k-anim" attribute="position" from="0.7 -0.5 0" to="0.7 1.2 0" dur="800" repeat="indefinite" begin="go"></a-animation>
+            <a-sphere id="k-ion" position="0.7 -0.5 0" radius="0.08" color="#32CD32" visible="false"
+                      animation="property: position; from: 0.7 -0.5 0; to: 0.7 1.2 0; dur: 800; loop: true; autoplay: false; pauseEvents: stopAnim">
             </a-sphere>
 
             <a-plane position="0 1.8 -1.2" rotation="10 0 0" width="2.2" height="1.4" color="#FFF" opacity="0.9">
-                <a-text value="Action Potential Curve" color="#333" position="-0.9 0.55 0.01" scale="0.4 0.4 0.4"></a-text>
-                <a-entity line="start: -0.9 -0.4 0.01; end: -0.4 -0.4 0.01; color: #999"></a-entity> <a-entity line="start: -0.4 -0.4 0.01; end: 0 0.5 0.01; color: #FF4500"></a-entity> <a-entity line="start: 0 0.5 0.01; end: 0.6 -0.6 0.01; color: #0066cc"></a-entity> <a-sphere id="ap-dot" position="-0.9 -0.4 0.02" radius="0.06" color="red"></a-sphere>
+                <a-text value="Action Potential" color="#333" position="-0.9 0.55 0.01" scale="0.4 0.4 0.4"></a-text>
+                <a-entity line="start: -0.9 -0.4 0.01; end: -0.4 -0.4 0.01; color: #999"></a-entity> 
+                <a-entity line="start: -0.4 -0.4 0.01; end: 0 0.5 0.01; color: #FF4500"></a-entity> 
+                <a-entity line="start: 0 0.5 0.01; end: 0.6 -0.6 0.01; color: #0066cc"></a-entity> 
+                <a-sphere id="ap-dot" position="-0.9 -0.4 0.02" radius="0.06" color="red"></a-sphere>
             </a-plane>
         </a-marker>
         <a-entity camera></a-entity>
@@ -57,33 +55,37 @@
         const vNum = document.getElementById('v-num');
         const vStatus = document.getElementById('v-status');
         const apDot = document.getElementById('ap-dot');
+        const naIon = document.getElementById('na-ion');
+        const kIon = document.getElementById('k-ion');
 
-        function toDepolarize() {
-            // 通道和离子逻辑
-            document.getElementById('na-ion').setAttribute('visible', 'true');
-            document.getElementById('na-anim').emit('go');
-            document.getElementById('k-ion').setAttribute('visible', 'false');
-            document.getElementById('na-gate').setAttribute('color', '#FFFF00'); // 开放变色
-            document.getElementById('k-gate').setAttribute('color', '#9370DB');
+        function playDepolarization() {
+            // 停止钾离子，启动钠离子
+            kIon.setAttribute('visible', 'false');
+            kIon.emit('stopAnim'); 
+            
+            naIon.setAttribute('visible', 'true');
+            naIon.components.animation.play(); 
 
-            // UI 和电位图逻辑
+            // UI 更新
             vNum.innerHTML = "+30 <small>mV</small>";
             vStatus.innerText = "Depolarization";
             vStatus.style.color = "#FF4500";
-            apDot.setAttribute('position', '0 0.5 0.02'); // 红点移动到顶点
+            apDot.setAttribute('position', '0 0.5 0.02'); 
         }
 
-        function toRepolarize() {
-            document.getElementById('na-ion').setAttribute('visible', 'false');
-            document.getElementById('na-gate').setAttribute('color', '#FF4500');
-            document.getElementById('k-ion').setAttribute('visible', 'true');
-            document.getElementById('k-anim').emit('go');
-            document.getElementById('k-gate').setAttribute('color', '#00FF00'); // 开放变色
+        function playRepolarization() {
+            // 停止钠离子，启动钾离子
+            naIon.setAttribute('visible', 'false');
+            naIon.emit('stopAnim');
 
+            kIon.setAttribute('visible', 'true');
+            kIon.components.animation.play();
+
+            // UI 更新
             vNum.innerHTML = "-80 <small>mV</small>";
             vStatus.innerText = "Repolarization";
             vStatus.style.color = "#00BFFF";
-            apDot.setAttribute('position', '0.6 -0.6 0.02'); // 红点移动到超极化点
+            apDot.setAttribute('position', '0.6 -0.6 0.02'); 
         }
     </script>
 </body>
