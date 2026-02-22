@@ -66,4 +66,96 @@
 
             <a-entity id="na-group" visible="false">
                 <a-sphere position="-0.8 1.0 0" radius="0.05" color="#00fbff" animation="property: position; from: -0.8 1.0 0; to: -0.8 -0.8 0; dur: 800; loop: true; easing: linear"></a-sphere>
-                <a-sphere position="-0.8 1.4 0" radius="0.05" color="#00fbff" animation="property: position; from: -0.8 1.4 0; to: -0.8 -0.4 0; dur: 80
+                <a-sphere position="-0.8 1.4 0" radius="0.05" color="#00fbff" animation="property: position; from: -0.8 1.4 0; to: -0.8 -0.4 0; dur: 800; loop: true; easing: linear; delay: 200"></a-sphere>
+                <a-sphere position="-0.8 1.8 0" radius="0.05" color="#00fbff" animation="property: position; from: -0.8 1.8 0; to: -0.8 0 0; dur: 800; loop: true; easing: linear; delay: 400"></a-sphere>
+            </a-entity>
+
+            <a-entity id="k-group" visible="false">
+                <a-sphere position="0.8 -0.8 0" radius="0.05" color="#00ff44" animation="property: position; from: 0.8 -0.8 0; to: 0.8 1.0 0; dur: 800; loop: true; easing: linear"></a-sphere>
+                <a-sphere position="0.8 -1.2 0" radius="0.05" color="#00ff44" animation="property: position; from: 0.8 -1.2 0; to: 0.8 0.6 0; dur: 800; loop: true; easing: linear; delay: 200"></a-sphere>
+                <a-sphere position="0.8 -0.4 0" radius="0.05" color="#00ff44" animation="property: position; from: 0.8 -0.4 0; to: 0.8 1.4 0; dur: 800; loop: true; easing: linear; delay: 400"></a-sphere>
+            </a-entity>
+
+        </a-marker>
+        <a-entity camera></a-entity>
+    </a-scene>
+
+    <script>
+        const canvas = document.getElementById('wave-canvas');
+        const ctx = canvas.getContext('2d');
+        const vDisplay = document.getElementById('v-display');
+        let points = [{x: 10, y: 140}]; 
+        let currentV = -70;
+        let animationActive = false;
+
+        function drawCurve() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.beginPath();
+            ctx.strokeStyle = "#2196F3"; // 蓝色实曲线
+            ctx.lineWidth = 3;
+            ctx.moveTo(points[0].x, points[0].y);
+            for(let i=1; i<points.length; i++) {
+                ctx.lineTo(points[i].x, points[i].y);
+            }
+            ctx.stroke();
+            
+            // 绘制实时指示红点
+            let last = points[points.length-1];
+            ctx.fillStyle = "red";
+            ctx.beginPath();
+            ctx.arc(last.x, last.y, 5, 0, Math.PI*2);
+            ctx.fill();
+        }
+
+        function startDepol() {
+            if(animationActive) return;
+            document.getElementById('na-group').setAttribute('visible', 'true');
+            document.getElementById('k-group').setAttribute('visible', 'false');
+            animationActive = true;
+            
+            let step = 0;
+            let timer = setInterval(() => {
+                step++;
+                currentV = -70 + (step * 5); 
+                let lastPoint = points[points.length-1];
+                points.push({x: lastPoint.x + 4, y: 140 - (step * 5.5)});
+                vDisplay.innerText = Math.min(30, currentV) + " mV";
+                drawCurve();
+                if(currentV >= 30) {
+                    clearInterval(timer);
+                    animationActive = false;
+                }
+            }, 60);
+        }
+
+        function startRepol() {
+            if(animationActive) return;
+            document.getElementById('na-group').setAttribute('visible', 'false');
+            document.getElementById('k-group').setAttribute('visible', 'true');
+            animationActive = true;
+
+            let step = 0;
+            let baseV = currentV;
+            let startX = points[points.length-1].x;
+            let startY = points[points.length-1].y;
+
+            let timer = setInterval(() => {
+                step++;
+                currentV = baseV - (step * 6); 
+                points.push({x: startX + (step * 4), y: startY + (step * 6.5)});
+                vDisplay.innerText = Math.max(-80, currentV) + " mV";
+                drawCurve();
+                if(currentV <= -80) {
+                    clearInterval(timer);
+                    animationActive = false;
+                }
+            }, 60);
+        }
+
+        // 初始化画布
+        canvas.width = 260;
+        canvas.height = 180;
+        drawCurve();
+    </script>
+</body>
+</html>
