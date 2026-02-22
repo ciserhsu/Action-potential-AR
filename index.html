@@ -2,22 +2,22 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>生理学AR-逻辑闭环版</title>
+    <title>神经电位 AR 演示 - 完美逻辑版</title>
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@master/aframe/build/aframe-ar.js"></script>
     <style>
         #monitor-box {
-            position: fixed; top: 10px; left: 10px; width: 170px; height: 110px;
-            background: rgba(0,0,0,0.85); border: 1.5px solid #00ff00; border-radius: 8px; z-index: 1001;
+            position: fixed; top: 12px; left: 12px; width: 180px; height: 120px;
+            background: rgba(0,0,0,0.85); border: 2px solid #00ff00; border-radius: 10px; z-index: 1000;
         }
-        #v-display { position: absolute; top: 3px; right: 8px; color: #00ff00; font-family: monospace; font-size: 15px; font-weight: bold; }
+        #v-display { position: absolute; top: 5px; right: 10px; color: #00ff00; font-family: monospace; font-size: 16px; font-weight: bold; }
         #wave-canvas { width: 100%; height: 100%; }
 
-        .controls { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); z-index: 1001; display: flex; gap: 8px; }
-        button { padding: 12px 14px; border-radius: 8px; border: none; font-weight: bold; color: white; cursor: pointer; font-size: 13px; box-shadow: 0 4px 10px rgba(0,0,0,0.4); }
-        .btn-na { background: #e53935; } 
-        .btn-k { background: #3949ab; } 
-        .btn-rec { background: #43a047; } 
+        .controls { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); z-index: 1000; display: flex; gap: 10px; }
+        button { padding: 14px 18px; border-radius: 12px; border: none; font-weight: bold; color: white; cursor: pointer; font-size: 14px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        .btn-na { background: #ff4444; } 
+        .btn-k { background: #4444ff; } 
+        .btn-rec { background: #4caf50; } 
     </style>
 </head>
 
@@ -33,26 +33,33 @@
         <button class="btn-rec" onclick="startRecovery()">3. 恢复期</button>
     </div>
 
-    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
-        <a-marker type="pattern" url="./pattern-image_0528fe.patt">
+    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;">
+        
+        <a-marker type="pattern" url="./pattern-image_0528fe.patt" smooth="true" smoothCount="5">
+            
             <a-entity rotation="-90 0 0" position="0 0 0" scale="0.1 0.1 0.1">
-                <a-text value="EXTRACELLULAR" position="0 2.5 0" align="center" color="#00e5ff" width="12"></a-text>
-                <a-box position="0 0 0" width="6" height="0.4" depth="2.5" color="#d7ccc8" material="opacity: 0.9;">
-                    <a-cylinder position="-1.8 0 0" radius="0.45" height="0.8" color="#ff1744">
+                
+                <a-text value="EXTRACELLULAR" position="0 2.5 0" align="center" color="#00ffff" width="12"></a-text>
+                
+                <a-box position="0 0 0" width="5.5" height="0.4" depth="2.2" color="#f5d6ba" opacity="0.95">
+                    <a-cylinder position="-1.6 0 0" radius="0.4" height="0.8" color="#ff4444">
                         <a-text value="Na+" position="0 0.6 0.2" align="center" width="8"></a-text>
                     </a-cylinder>
-                    <a-cylinder position="1.8 0 0" radius="0.45" height="0.8" color="#304ffe">
+                    <a-cylinder position="1.6 0 0" radius="0.4" height="0.8" color="#4444ff">
                         <a-text value="K+" position="0 0.6 0.2" align="center" width="8"></a-text>
                     </a-cylinder>
                 </a-box>
-                <a-text value="INTRACELLULAR" position="0 -2.5 0" align="center" color="#ff4081" width="12"></a-text>
+
+                <a-text value="INTRACELLULAR" position="0 -2.5 0" align="center" color="#ff00ff" width="12"></a-text>
 
                 <a-entity id="na-flow" visible="false">
-                    <a-sphere position="-1.8 2.2 0" radius="0.18" color="#00fbff" animation="property: position; from: -1.8 2.2 0; to: -1.8 -2.2 0; dur: 800; loop: true; easing: linear"></a-sphere>
+                    <a-sphere position="-1.6 2.0 0" radius="0.15" color="#00fbff" animation="property: position; from: -1.6 2.0 0; to: -1.6 -2.0 0; dur: 800; loop: true"></a-sphere>
                 </a-entity>
+                
                 <a-entity id="k-flow" visible="false">
-                    <a-sphere position="1.8 -2.2 0" radius="0.18" color="#00e676" animation="property: position; from: 1.8 -2.2 0; to: 1.8 2.2 0; dur: 800; loop: true; easing: linear"></a-sphere>
+                    <a-sphere position="1.6 -2.0 0" radius="0.15" color="#00ff00" animation="property: position; from: 1.6 -2.0 0; to: 1.6 2.0 0; dur: 800; loop: true"></a-sphere>
                 </a-entity>
+
             </a-entity>
         </a-marker>
         <a-entity camera></a-entity>
@@ -63,12 +70,12 @@
         const ctx = canvas.getContext('2d');
         const vDisplay = document.getElementById('v-display');
         
-        const START_X = 5;
-        const START_Y = 90;
-        let points = [{x: START_X, y: START_Y}]; 
+        const ORIGIN_X = 5;
+        const ORIGIN_Y = 100;
+        let points = [{x: ORIGIN_X, y: ORIGIN_Y}]; 
         let currentV = -70;
         let isMoving = false;
-        let hasFinishedCycle = false; // 新增状态：是否完成了一个循环
+        let finished = false; // 标记一轮是否结束
 
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -80,15 +87,14 @@
             ctx.fillStyle = "red"; ctx.beginPath(); ctx.arc(last.x, last.y, 4, 0, Math.PI*2); ctx.fill();
         }
 
-        // 1. 去极化
         function startDepol() {
             if(isMoving) return;
-            
-            // 核心修复逻辑：如果已经完成一轮，点击1时先重置画板
-            if (hasFinishedCycle || points.length > 50) { 
-                points = [{x: START_X, y: START_Y}];
+
+            // 生理逻辑修复：如果已经完成演示，点击1则重置起点
+            if(finished || points.length > 50) {
+                points = [{x: ORIGIN_X, y: ORIGIN_Y}];
                 currentV = -70;
-                hasFinishedCycle = false;
+                finished = false;
                 draw();
             }
 
@@ -96,14 +102,13 @@
             document.getElementById('na-flow').setAttribute('visible', 'true');
             let timer = setInterval(() => {
                 currentV += 5;
-                points.push({x: points[points.length-1].x + 3, y: START_Y - ((currentV+70)*0.7)});
+                points.push({x: points[points.length-1].x + 3, y: ORIGIN_Y - ((currentV+70)*0.75)});
                 vDisplay.innerText = Math.min(30, currentV) + " mV";
                 draw();
                 if(currentV >= 30) { clearInterval(timer); isMoving = false; }
             }, 50);
         }
 
-        // 2. 复极化
         function startRepol() {
             if(isMoving || currentV < 30) return;
             isMoving = true;
@@ -111,32 +116,31 @@
             document.getElementById('k-flow').setAttribute('visible', 'true');
             let timer = setInterval(() => {
                 currentV -= 5;
-                points.push({x: points[points.length-1].x + 3, y: START_Y - ((currentV+70)*0.7)});
+                points.push({x: points[points.length-1].x + 3, y: ORIGIN_Y - ((currentV+70)*0.75)});
                 vDisplay.innerText = currentV + " mV";
                 draw();
                 if(currentV <= -80) { clearInterval(timer); isMoving = false; }
             }, 50);
         }
 
-        // 3. 恢复期
         function startRecovery() {
             if(isMoving || currentV != -80) return;
             isMoving = true;
             document.getElementById('k-flow').setAttribute('visible', 'false');
             let timer = setInterval(() => {
                 currentV += 1;
-                points.push({x: points[points.length-1].x + 3, y: START_Y - ((currentV+70)*0.7)});
+                points.push({x: points[points.length-1].x + 3, y: ORIGIN_Y - ((currentV+70)*0.75)});
                 vDisplay.innerText = currentV + " mV";
                 draw();
                 if(currentV >= -70) { 
                     clearInterval(timer); 
                     isMoving = false; 
-                    hasFinishedCycle = true; // 标记本轮结束
+                    finished = true; // 一轮教学动作完成
                 }
             }, 100);
         }
 
-        canvas.width = 170; canvas.height = 110; draw();
+        canvas.width = 180; canvas.height = 120; draw();
     </script>
 </body>
 </html>
