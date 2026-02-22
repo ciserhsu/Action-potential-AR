@@ -2,126 +2,159 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>神经动作电位 AR 交互课件</title>
+    <title>神经动作电位机制 WebAR</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/aframe/1.2.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@master/aframe/build/aframe-ar.js"></script>
     <style>
-        /* 屏幕 UI 样式 */
-        .ui-panel { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 100; display:flex; gap:10px; }
-        button { padding: 15px 25px; border-radius: 8px; border: none; background: #222; color: white; font-weight: bold; cursor: pointer; }
-        
-        /* 实时电位图容器 - 固定在屏幕左侧 */
-        #chart-container { 
-            position: fixed; top: 20px; left: 20px; width: 200px; height: 150px; 
-            background: rgba(0,0,0,0.8); border: 1px solid #444; border-radius: 10px; z-index: 100; padding: 10px;
+        /* 1. 启动图与实时曲线容器 */
+        #monitor-box {
+            position: fixed; top: 10px; left: 10px; width: 260px; height: 180px;
+            background: rgba(255, 255, 255, 0.9); border: 2px solid #333; border-radius: 8px; z-index: 1000;
+            overflow: hidden;
         }
-        canvas { width: 100%; height: 100%; }
-        #v-text { color: #00ff00; font-family: monospace; font-size: 20px; text-align: center; }
+        /* 将您上传的专业图设为背景 */
+        #bg-image {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            opacity: 0.3; object-fit: contain; pointer-events: none;
+        }
+        #wave-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1001; }
+        
+        #v-display {
+            position: absolute; bottom: 5px; right: 10px; color: #d32f2f;
+            font-family: 'Courier New', monospace; font-weight: bold; font-size: 20px; z-index: 1002;
+        }
+
+        /* 2. 控制按钮 */
+        .controls { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); z-index: 1000; display:flex; gap:15px; }
+        button { 
+            padding: 15px 20px; border-radius: 30px; border: none; font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3); color: white; cursor: pointer;
+        }
+        .btn-na { background: #ff4433; }
+        .btn-k { background: #4488ff; }
+        .btn-reset { background: #666; }
     </style>
 </head>
 
 <body style="margin: 0px; overflow: hidden;">
-    <div id="chart-container">
-        <div id="v-text">-70 mV</div>
-        <canvas id="apChart"></canvas>
+    <div id="monitor-box">
+        <img id="bg-image" src="https://api.allorigins.win/raw?url=https://raw.githubusercontent.com/ciserhsu/Action-potential-AR/main/image_0528fe.png" onerror="this.src='https://via.placeholder.com/260x180?text=AP+Reference+Graph'">
+        <canvas id="wave-canvas"></canvas>
+        <div id="v-display">-70 mV</div>
     </div>
 
-    <div class="ui-panel">
-        <button onclick="triggerDepol()" style="background: #cc3300;">1. 去极化</button>
-        <button onclick="triggerRepol()" style="background: #0066cc;">2. 复极化</button>
-        <button onclick="location.reload()">重置</button>
+    <div class="controls">
+        <button class="btn-na" onclick="startDepol()">1. 去极化 (Na+内流)</button>
+        <button class="btn-k" onclick="startRepol()">2. 复极化 (K+外流)</button>
+        <button class="btn-reset" onclick="location.reload()">重置</button>
     </div>
 
     <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
         <a-marker preset="hiro">
-            <a-text value="Extracellular (Outside)" position="0 1 1" align="center" color="#FFF" scale="0.6 0.6 0.6"></a-text>
-            <a-box position="0 0 0" width="3" height="0.05" depth="2" color="#F5DEB3" opacity="0.8"></a-box>
-            <a-text value="Intracellular (Inside)" position="0 -0.5 1" align="center" color="#FFF" scale="0.6 0.6 0.6"></a-text>
+            <a-text value="Extracellular Space (膜外)" position="0 0.8 1.2" align="center" color="#00ffff" scale="0.5 0.5 0.5"></a-text>
+            
+            <a-box position="0 0 0" width="3.5" height="0.1" depth="2" color="#e3c4a8" opacity="0.9"></a-box>
+            
+            <a-text value="Intracellular Space (膜内)" position="0 -0.6 1.2" align="center" color="#ff00ff" scale="0.5 0.5 0.5"></a-text>
 
-            <a-cylinder id="na-gate" position="-0.7 0.1 0" radius="0.2" height="0.3" color="#FF4500"></a-cylinder>
-            <a-cylinder id="k-gate" position="0.7 0.1 0" radius="0.2" height="0.3" color="#9370DB"></a-cylinder>
+            <a-cylinder position="-0.8 0.1 0" radius="0.2" height="0.4" color="#d32f2f">
+                <a-text value="Na+ Channel" position="0 0.4 0" align="center" scale="0.3 0.3 0.3" color="#000"></a-text>
+            </a-cylinder>
+            <a-cylinder position="0.8 0.1 0" radius="0.2" height="0.4" color="#303f9f">
+                <a-text value="K+ Channel" position="0 0.4 0" align="center" scale="0.3 0.3 0.3" color="#000"></a-text>
+            </a-cylinder>
 
-            <a-entity id="na-flow" visible="false">
-                <a-sphere position="-0.7 0.8 0" radius="0.08" color="#00BFFF" 
-                          animation="property: position; from: -0.7 0.8 0; to: -0.7 -0.5 0; dur: 1000; loop: true; easing: linear;"></a-sphere>
-                <a-sphere position="-0.7 1.2 0" radius="0.08" color="#00BFFF" 
-                          animation="property: position; from: -0.7 1.2 0; to: -0.7 -0.1 0; dur: 1000; loop: true; easing: linear;"></a-sphere>
+            <a-entity id="na-ions" visible="false">
+                <a-sphere position="-0.8 1.2 0" radius="0.06" color="#00fbff" animation="property: position; from: -0.8 1.2 0; to: -0.8 -0.8 0; dur: 600; loop: true; easing: linear"></a-sphere>
+                <a-sphere position="-0.8 0.8 0.2" radius="0.06" color="#00fbff" animation="property: position; from: -0.8 0.8 0.2; to: -0.8 -1.2 0.2; dur: 600; loop: true; easing: linear; delay: 200"></a-sphere>
+                <a-sphere position="-0.8 1.5 -0.2" radius="0.06" color="#00fbff" animation="property: position; from: -0.8 1.5 -0.2; to: -0.8 -0.5 -0.2; dur: 600; loop: true; easing: linear; delay: 400"></a-sphere>
             </a-entity>
 
-            <a-entity id="k-flow" visible="false">
-                <a-sphere position="0.7 -0.5 0" radius="0.08" color="#32CD32" 
-                          animation="property: position; from: 0.7 -0.5 0; to: 0.7 0.8 0; dur: 1000; loop: true; easing: linear;"></a-sphere>
-                <a-sphere position="0.7 -0.1 0" radius="0.08" color="#32CD32" 
-                          animation="property: position; from: 0.7 -0.1 0; to: 0.7 1.2 0; dur: 1000; loop: true; easing: linear;"></a-sphere>
+            <a-entity id="k-ions" visible="false">
+                <a-sphere position="0.8 -0.8 0" radius="0.06" color="#00ff44" animation="property: position; from: 0.8 -0.8 0; to: 0.8 1.2 0; dur: 600; loop: true; easing: linear"></a-sphere>
+                <a-sphere position="0.8 -1.2 0.2" radius="0.06" color="#00ff44" animation="property: position; from: 0.8 -1.2 0.2; to: 0.8 0.8 0.2; dur: 600; loop: true; easing: linear; delay: 200"></a-sphere>
+                <a-sphere position="0.8 -0.5 -0.2" radius="0.06" color="#00ff44" animation="property: position; from: 0.8 -0.5 -0.2; to: 0.8 1.5 -0.2; dur: 600; loop: true; easing: linear; delay: 400"></a-sphere>
             </a-entity>
         </a-marker>
         <a-entity camera></a-entity>
     </a-scene>
 
     <script>
-        // 绘图逻辑
-        const canvas = document.getElementById('apChart');
+        const canvas = document.getElementById('wave-canvas');
         const ctx = canvas.getContext('2d');
-        const vText = document.getElementById('v-text');
-        let points = [70]; // 初始静息电位
+        const vDisplay = document.getElementById('v-display');
+        let points = [{x: 10, y: 140}]; 
         let currentV = -70;
+        let animationActive = false;
 
-        function drawChart() {
+        function drawCurve() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.strokeStyle = '#00ff00';
-            ctx.lineWidth = 2;
             ctx.beginPath();
-            ctx.moveTo(0, 100 - (points[0] + 80)/1.5);
+            ctx.strokeStyle = "#2196F3";
+            ctx.lineWidth = 3;
+            ctx.moveTo(points[0].x, points[0].y);
             for(let i=1; i<points.length; i++) {
-                ctx.lineTo(i * (canvas.width/50), 100 - (points[i] + 80)/1.5);
+                ctx.lineTo(points[i].x, points[i].y);
             }
             ctx.stroke();
-            if(points.length > 50) points.shift();
-        }
-
-        function triggerDepol() {
-            // AR 动画切换
-            document.getElementById('na-flow').setAttribute('visible', 'true');
-            document.getElementById('k-flow').setAttribute('visible', 'false');
             
-            // 模拟数值变化
+            // 绘制当前指示红点
+            let last = points[points.length-1];
+            ctx.fillStyle = "red";
+            ctx.beginPath();
+            ctx.arc(last.x, last.y, 4, 0, Math.PI*2);
+            ctx.fill();
+        }
+
+        function startDepol() {
+            if(animationActive) return;
+            document.getElementById('na-ions').setAttribute('visible', 'true');
+            document.getElementById('k-ions').setAttribute('visible', 'false');
+            animationActive = true;
+            
+            let count = 0;
             let timer = setInterval(() => {
-                if(currentV < 30) {
-                    currentV += 5;
-                    points.push(currentV);
-                    vText.innerText = currentV + " mV";
-                    drawChart();
-                } else {
+                count++;
+                currentV = -70 + (count * 5); // 快速上升
+                let lastPoint = points[points.length-1];
+                points.push({x: lastPoint.x + 4, y: 140 - (count * 6)});
+                vDisplay.innerText = Math.min(30, currentV) + " mV";
+                drawCurve();
+                if(currentV >= 30) {
                     clearInterval(timer);
+                    animationActive = false;
                 }
             }, 50);
         }
 
-        function triggerRepol() {
-            // AR 动画切换
-            document.getElementById('na-flow').setAttribute('visible', 'false');
-            document.getElementById('k-flow').setAttribute('visible', 'true');
+        function startRepol() {
+            if(animationActive) return;
+            document.getElementById('na-ions').setAttribute('visible', 'false');
+            document.getElementById('k-ions').setAttribute('visible', 'true');
+            animationActive = true;
 
-            // 模拟数值变化
+            let count = 0;
+            let baseV = currentV;
+            let startX = points[points.length-1].x;
+            let startY = points[points.length-1].y;
+
             let timer = setInterval(() => {
-                if(currentV > -80) {
-                    currentV -= 5;
-                    points.push(currentV);
-                    vText.innerText = currentV + " mV";
-                    drawChart();
-                } else {
+                count++;
+                currentV = baseV - (count * 6); // 快速下降
+                points.push({x: startX + (count * 4), y: startY + (count * 7)});
+                vDisplay.innerText = Math.max(-80, currentV) + " mV";
+                drawCurve();
+                if(currentV <= -80) {
                     clearInterval(timer);
+                    animationActive = false;
                 }
             }, 50);
         }
 
-        // 初始化背景
-        setInterval(() => {
-            if(points.length < 50) {
-                points.push(currentV);
-                drawChart();
-            }
-        }, 100);
+        // 初始化Canvas大小
+        canvas.width = 260;
+        canvas.height = 180;
+        drawCurve();
     </script>
 </body>
 </html>
