@@ -2,21 +2,21 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>生理学AR教学-终极版</title>
+    <title>生理学AR-适配优化版</title>
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
     <style>
-        /* 实时电位图 - 固定左上角 */
+        /* 实时电位图 - 缩小并优化边距 */
         #monitor-box {
-            position: fixed; top: 10px; left: 10px; width: 200px; height: 140px;
+            position: fixed; top: 10px; left: 10px; width: 180px; height: 120px;
             background: rgba(0,0,0,0.8); border: 2px solid #00ff00; border-radius: 8px; z-index: 999;
         }
-        #v-display { position: absolute; top: 5px; right: 10px; color: #00ff00; font-family: monospace; font-size: 18px; }
+        #v-display { position: absolute; top: 5px; right: 8px; color: #00ff00; font-family: monospace; font-size: 16px; }
         #wave-canvas { width: 100%; height: 100%; }
 
-        /* 按钮 - 固定底部 */
-        .controls { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 999; display: flex; gap: 10px; }
-        button { padding: 15px 20px; border-radius: 10px; border: none; font-weight: bold; color: white; cursor: pointer; font-size: 14px; box-shadow: 0 4px 8px rgba(0,0,0,0.4); }
+        /* 按钮样式优化 */
+        .controls { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 999; display: flex; gap: 8px; }
+        button { padding: 12px 16px; border-radius: 8px; border: none; font-weight: bold; color: white; cursor: pointer; font-size: 13px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
         .btn-na { background: #ff4444; } .btn-k { background: #4444ff; }
     </style>
 </head>
@@ -28,32 +28,33 @@
     </div>
 
     <div class="controls">
-        <button class="btn-na" onclick="startDepol()">1. 去极化 (Na+内流)</button>
-        <button class="btn-k" onclick="startRepol()">2. 复极化 (K+外流)</button>
+        <button class="btn-na" onclick="startDepol()">1. 去极化</button>
+        <button class="btn-k" onclick="startRepol()">2. 复极化</button>
     </div>
 
-    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;">
+    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix;">
         
-        <a-marker type="pattern" url="pattern-image_0528fe.patt">
+        <a-marker type="pattern" url="pattern-image_0528fe.patt" smooth="true" smoothCount="10" smoothTolerance="0.01" smoothThreshold="5">
             
-            <a-sphere position="0 0.5 0" radius="0.1" color="red"></a-sphere>
-
-            <a-entity rotation="-90 0 0">
+            <a-entity rotation="-90 0 0" position="0 0 -0.5" scale="0.25 0.25 0.25">
                 
-                <a-text value="OUTSIDE (Na+ High)" position="0 1.2 0" align="center" color="#00ffff" width="4"></a-text>
+                <a-text value="EXTRACELLULAR" position="0 1.5 0" align="center" color="#00ffff" width="6"></a-text>
                 
-                <a-box position="0 0 0" width="2.5" height="0.1" depth="1" color="#f5d6ba">
-                    <a-cylinder id="na-gate" position="-0.6 0 0" radius="0.15" height="0.3" color="#ff4444"></a-cylinder>
-                    <a-cylinder id="k-gate" position="0.6 0 0" radius="0.15" height="0.3" color="#4444ff"></a-cylinder>
+                <a-box position="0 0 0" width="3.5" height="0.2" depth="1.5" color="#f5d6ba" material="opacity: 0.9; transparent: true">
+                    <a-cylinder id="na-gate" position="-1 0 0" radius="0.25" height="0.4" color="#ff4444"></a-cylinder>
+                    <a-cylinder id="k-gate" position="1 0 0" radius="0.25" height="0.4" color="#4444ff"></a-cylinder>
                 </a-box>
 
-                <a-text value="INSIDE (K+ High)" position="0 -1.0 0" align="center" color="#ff00ff" width="4"></a-text>
+                <a-text value="INTRACELLULAR" position="0 -1.5 0" align="center" color="#ff00ff" width="6"></a-text>
 
                 <a-entity id="na-ions" visible="false">
-                    <a-sphere position="-0.6 1.0 0" radius="0.05" color="#00fbff" animation="property: position; from: -0.6 1.0 0; to: -0.6 -0.8 0; dur: 800; loop: true"></a-sphere>
+                    <a-sphere position="-1 1.2 0" radius="0.08" color="#00fbff" animation="property: position; from: -1 1.2 0; to: -1 -1.2 0; dur: 1000; loop: true"></a-sphere>
+                    <a-sphere position="-1 1.8 0" radius="0.08" color="#00fbff" animation="property: position; from: -1 1.8 0; to: -1 -0.6 0; dur: 1000; loop: true; delay: 300"></a-sphere>
                 </a-entity>
+                
                 <a-entity id="k-ions" visible="false">
-                    <a-sphere position="0.6 -0.8 0" radius="0.05" color="#00ff00" animation="property: position; from: 0.6 -0.8 0; to: 0.6 1.0 0; dur: 800; loop: true"></a-sphere>
+                    <a-sphere position="1 -1.2 0" radius="0.08" color="#00ff00" animation="property: position; from: 1 -1.2 0; to: 1 1.2 0; dur: 1000; loop: true"></a-sphere>
+                    <a-sphere position="1 -1.8 0" radius="0.08" color="#00ff00" animation="property: position; from: 1 -1.8 0; to: 1 0.6 0; dur: 1000; loop: true; delay: 300"></a-sphere>
                 </a-entity>
 
             </a-entity>
@@ -66,7 +67,7 @@
         const canvas = document.getElementById('wave-canvas');
         const ctx = canvas.getContext('2d');
         const vDisplay = document.getElementById('v-display');
-        let points = [{x: 5, y: 120}]; let currentV = -70;
+        let points = [{x: 5, y: 100}]; let currentV = -70;
 
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -82,7 +83,7 @@
             let t = 0;
             let timer = setInterval(() => {
                 t++; currentV += 5;
-                points.push({x: points[points.length-1].x + 4, y: 120 - (t*5)});
+                points.push({x: points[points.length-1].x + 4, y: points[points.length-1].y - 5});
                 vDisplay.innerText = Math.min(30, currentV) + " mV";
                 draw();
                 if(currentV >= 30) clearInterval(timer);
@@ -95,13 +96,13 @@
             let t = 0;
             let timer = setInterval(() => {
                 t++; currentV -= 6;
-                points.push({x: points[points.length-1].x + 4, y: points[points.length-1].y + 7});
+                points.push({x: points[points.length-1].x + 4, y: points[points.length-1].y + 6});
                 vDisplay.innerText = Math.max(-80, currentV) + " mV";
                 draw();
                 if(currentV <= -80) clearInterval(timer);
             }, 60);
         }
-        canvas.width = 200; canvas.height = 140; draw();
+        canvas.width = 180; canvas.height = 120; draw();
     </script>
 </body>
 </html>
