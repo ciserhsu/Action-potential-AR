@@ -2,23 +2,23 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>生理学AR - 动作电位(快速识别版)</title>
+    <title>生理学AR - 动作电位(手机优化版)</title>
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
     
     <style>
-        /* 示波器显示框 */
         #monitor-box {
             position: fixed; top: 10px; left: 10px; width: 170px; height: 110px;
             background: rgba(0,0,0,0.85); border: 2px solid #00ff00; border-radius: 8px; z-index: 1001;
         }
         #v-display { position: absolute; top: 4px; right: 10px; color: #00ff00; font-family: monospace; font-size: 15px; font-weight: bold; }
         #wave-canvas { width: 100%; height: 100%; }
-        
-        /* 交互按钮 */
         .controls { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 1001; display: flex; gap: 8px; }
         button { padding: 12px 14px; border-radius: 10px; border: none; font-weight: bold; color: white; cursor: pointer; font-size: 13px; }
         .btn-na { background: #ff4444; } .btn-k { background: #4444ff; } .btn-rec { background: #4caf50; }
+        
+        /* 手机端全屏修正 */
+        html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; }
     </style>
 </head>
 
@@ -34,13 +34,14 @@
         <button class="btn-rec" onclick="startRecovery()">3. 恢复期</button>
     </div>
 
-    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
+    <a-scene 
+        embedded 
+        arjs="sourceType: webcam; debugUIEnabled: false; sourceWidth:1280; sourceHeight:720; displayWidth:1280; displayHeight:720;" 
+        vr-mode-ui="enabled: false">
         
         <a-marker type="pattern" url="./pattern-image_0528fe.patt">
-            
             <a-entity position="0 0 0" scale="0.5 0.5 0.5">
                 <a-text value="OUTSIDE" position="0 2.8 0" align="center" color="#00ffff" width="10" rotation="-90 0 0"></a-text>
-                
                 <a-box position="0 0 0" width="6" height="0.2" depth="2.5" color="#f5d6ba">
                     <a-cylinder position="-1.8 0 0" radius="0.45" height="0.5" color="#ff4444">
                         <a-text value="Na+" position="0 0.6 0" align="center" width="6" rotation="-90 0 0"></a-text>
@@ -49,7 +50,6 @@
                         <a-text value="K+" position="0 0.6 0" align="center" width="6" rotation="-90 0 0"></a-text>
                     </a-cylinder>
                 </a-box>
-
                 <a-text value="INSIDE" position="0 -2.8 0" align="center" color="#ff00ff" width="10" rotation="-90 0 0"></a-text>
 
                 <a-entity id="na-ani" visible="false">
@@ -59,14 +59,22 @@
                     <a-sphere position="1.8 -2 0" radius="0.15" color="#00ff00" animation="property: position; from: 1.8 -2 0; to: 1.8 2 0; dur: 800; loop: true"></a-sphere>
                 </a-entity>
             </a-entity>
-            
         </a-marker>
 
         <a-entity camera></a-entity>
     </a-scene>
 
     <script>
-        // --- 示波器逻辑 ---
+        // 手机专项：强制唤醒摄像头脚本
+        window.addEventListener('load', () => {
+            const scene = document.querySelector('a-scene');
+            // 如果 2 秒后画面还是黑的，手动触发一次 resize 来强制渲染
+            setTimeout(() => {
+                window.dispatchEvent(new Event('resize'));
+            }, 2000);
+        });
+
+        // 示波器逻辑
         const canvas = document.getElementById('wave-canvas');
         const ctx = canvas.getContext('2d');
         const vDisp = document.getElementById('v-display');
