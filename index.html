@@ -3,11 +3,11 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>生理学AR - 兼容测试版</title>
+    <title>生理学AR - 动作电位(模型缩小版)</title>
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+    
     <style>
-        /* 强制覆盖，确保背景不是白色 */
         body { background-color: black; margin: 0; overflow: hidden; }
         #monitor-box { position: fixed; top: 10px; left: 10px; width: 170px; height: 110px; background: rgba(0,0,0,0.85); border: 2px solid #00ff00; border-radius: 8px; z-index: 1001; }
         #v-display { position: absolute; top: 4px; right: 10px; color: #00ff00; font-family: monospace; font-size: 15px; font-weight: bold; }
@@ -16,12 +16,12 @@
         button { padding: 12px 14px; border-radius: 10px; border: none; font-weight: bold; color: white; cursor: pointer; font-size: 13px; }
         .btn-na { background: #ff4444; } .btn-k { background: #4444ff; } .btn-rec { background: #4caf50; }
         
-        /* 手机强制启动按钮 */
-        #start-btn { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 20px; background: #2196F3; color: white; z-index: 9999; border-radius: 10px; border: none; font-size: 18px; }
+        /* 强制启动按钮 (保留，防止手机再次死锁) */
+        #start-btn { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 15px 25px; background: #2196F3; color: white; z-index: 9999; border-radius: 10px; border: none; font-size: 16px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 
-<body>
+<body style="margin: 0; overflow: hidden;">
     <button id="start-btn" onclick="initCamera()">点此开启 AR 实验室</button>
 
     <div id="monitor-box">
@@ -36,9 +36,12 @@
     </div>
 
     <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
+        
         <a-marker type="pattern" url="./pattern-image_0528fe.patt">
-            <a-entity position="0 0 0" scale="0.2 0.2 0.2">
+            
+            <a-entity position="0 0 0" scale="0.17 0.17 0.17">
                 <a-text value="OUTSIDE" position="0 2.8 0" align="center" color="#00ffff" width="10" rotation="-90 0 0"></a-text>
+                
                 <a-box position="0 0 0" width="6" height="0.2" depth="2.5" color="#f5d6ba">
                     <a-cylinder position="-1.8 0 0" radius="0.45" height="0.5" color="#ff4444">
                         <a-text value="Na+" position="0 0.6 0" align="center" width="6" rotation="-90 0 0"></a-text>
@@ -47,28 +50,31 @@
                         <a-text value="K+" position="0 0.6 0" align="center" width="6" rotation="-90 0 0"></a-text>
                     </a-cylinder>
                 </a-box>
+
                 <a-text value="INSIDE" position="0 -2.8 0" align="center" color="#ff00ff" width="10" rotation="-90 0 0"></a-text>
 
                 <a-entity id="na-ani" visible="false">
-                    <a-sphere position="-1.8 2 0" radius="0.15" color="#00fbff" animation="property: position; from: -1.8 2 0; to: -1.8 -2 0; dur: 800; loop: true"></a-sphere>
+                    <a-sphere position="-1.8 0.8 0" radius="0.15" color="#00fbff" animation="property: position; from: -1.8 0.8 0; to: -1.8 -0.8 0; dur: 800; loop: true"></a-sphere>
                 </a-entity>
                 <a-entity id="k-ani" visible="false">
-                    <a-sphere position="1.8 -2 0" radius="0.15" color="#00ff00" animation="property: position; from: 1.8 -2 0; to: 1.8 2 0; dur: 800; loop: true"></a-sphere>
+                    <a-sphere position="1.8 -0.8 0" radius="0.15" color="#00ff00" animation="property: position; from: 1.8 -0.8 0; to: 1.8 0.8 0; dur: 800; loop: true"></a-sphere>
                 </a-entity>
             </a-entity>
+            
         </a-marker>
+
         <a-entity camera></a-entity>
     </a-scene>
 
     <script>
-        // 强制初始化逻辑
+        // --- 强制初始化与兼容逻辑 (保持不变) ---
         function initCamera() {
             document.getElementById('start-btn').style.display = 'none';
             // 触发 AR 引擎重新对齐
             window.dispatchEvent(new Event('resize'));
         }
 
-        // 示波器逻辑
+        // --- 示波器波形逻辑 (保持不变) ---
         const canvas = document.getElementById('wave-canvas');
         const ctx = canvas.getContext('2d');
         const vDisp = document.getElementById('v-display');
