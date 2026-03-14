@@ -2,32 +2,39 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>神经动作电位 AR 教学版 (NFT课本增强版)</title>
+    <title>神经动作电位 AR 教学版</title>
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
-    
     <style>
-        /* 1. 示波器监视框 */
         #monitor-box {
             position: fixed; top: 10px; left: 10px; width: 170px; height: 110px;
             background: rgba(0,0,0,0.85); border: 2px solid #00ff00; border-radius: 8px; z-index: 1001;
         }
         #v-display { position: absolute; top: 4px; right: 10px; color: #00ff00; font-family: monospace; font-size: 15px; font-weight: bold; }
         #wave-canvas { width: 100%; height: 100%; }
-        
-        /* 2. 交互按钮 */
         .controls { position: fixed; bottom: 35px; left: 50%; transform: translateX(-50%); z-index: 1001; display: flex; gap: 8px; }
         button { padding: 12px 14px; border-radius: 10px; border: none; font-weight: bold; color: white; cursor: pointer; font-size: 13px; }
         .btn-na { background: #ff4444; } .btn-k { background: #4444ff; } .btn-rec { background: #4caf50; }
         
-        /* 3. NFT 加载提示层 (识别后会自动消失) */
-        .arjs-loader { height: 100%; width: 100%; position: absolute; top: 0; left: 0; background-color: rgba(0, 0, 0, 0.7); z-index: 9999; display: flex; justify-content: center; align-items: center; }
-        .arjs-loader div { text-align: center; font-size: 1.2em; color: white; font-family: sans-serif; }
+        /* 强制启动按钮样式 */
+        .arjs-loader { 
+            height: 100%; width: 100%; position: absolute; top: 0; left: 0; 
+            background-color: rgba(0, 0, 0, 0.8); z-index: 9999; 
+            display: flex; flex-direction: column; justify-content: center; align-items: center; 
+            color: white; text-align: center; font-family: sans-serif;
+        }
+        #start-btn {
+            margin-top: 20px; padding: 15px 30px; background: #2196F3; color: white; 
+            border-radius: 50px; border: none; font-size: 18px; font-weight: bold; cursor: pointer;
+        }
     </style>
 </head>
 
 <body style="margin: 0; overflow: hidden;">
-    <div class="arjs-loader" id="loader"><div>正在初始化摄像头并加载课本数据...<br>请确保已授权相机权限</div></div>
+    <div class="arjs-loader" id="loader">
+        <div id="loading-text">正在准备教学资源...</div>
+        <button id="start-btn" onclick="initAR()">点击开启 AR 摄像头</button>
+    </div>
 
     <div id="monitor-box">
         <div id="v-display">-70 mV</div>
@@ -40,22 +47,10 @@
         <button class="btn-rec" onclick="startRecovery()">3. 恢复期</button>
     </div>
 
-    <a-scene 
-        embedded 
-        arjs="sourceType: webcam; debugUIEnabled: false; trackingMethod: best; sourceWidth:1280; sourceHeight:720; displayWidth:1280; displayHeight:720;" 
-        vr-mode-ui="enabled: false">
-        
-        <a-nft
-            type="nft"
-            url="./Action potential"
-            smooth="true"
-            smoothCount="10"
-            smoothTolerance=".01"
-            smoothThreshold="5">
-            
+    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false; trackingMethod: best; sourceWidth:1280; sourceHeight:720;" vr-mode-ui="enabled: false">
+        <a-nft type="nft" url="./Action potential" smooth="true" smoothCount="10">
             <a-entity rotation="-90 0 0" position="80 0 -120" scale="15 15 15">
                 <a-text value="OUTSIDE" position="0 2.8 0" align="center" color="#00ffff" width="12"></a-text>
-                
                 <a-box position="0 0 0" width="6" height="0.5" depth="2.5" color="#f5d6ba">
                     <a-cylinder position="-1.8 0 0" radius="0.45" height="1" color="#ff4444">
                         <a-text value="Na+" position="0 0.7 0.2" align="center" width="8"></a-text>
@@ -64,9 +59,7 @@
                         <a-text value="K+" position="0 0.7 0.2" align="center" width="8"></a-text>
                     </a-cylinder>
                 </a-box>
-
                 <a-text value="INSIDE" position="0 -2.8 0" align="center" color="#ff00ff" width="12"></a-text>
-
                 <a-entity id="na-ani" visible="false">
                     <a-sphere position="-1.8 2.5 0" radius="0.18" color="#00fbff" animation="property: position; from: -1.8 2.5 0; to: -1.8 -2.5 0; dur: 800; loop: true"></a-sphere>
                 </a-entity>
@@ -75,38 +68,33 @@
                 </a-entity>
             </a-entity>
         </a-nft>
-
         <a-entity camera></a-entity>
     </a-scene>
 
     <script>
-        // 【新增】手机端强制权限请求补丁
-        window.onload = function() {
-            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-                .then(function(stream) {
-                    console.log("手机摄像头授权成功");
-                })
-                .catch(function(err) {
-                    alert("提示：请在浏览器地址栏左侧点击'锁头'图标，允许摄像头权限。");
-                });
-            }
+        // 核心启动函数
+        function initAR() {
+            const btn = document.getElementById('start-btn');
+            btn.innerText = "正在识别课本，请稍候...";
             
-            // 监听 NFT 文件加载状态，加载完后自动隐藏黑色遮罩
-            window.addEventListener('arjs-nft-loaded', function() {
-                document.getElementById('loader').style.display = 'none';
+            // 强制请求摄像头权限
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+            .then(function(stream) {
+                // 监听 AR.js 加载完成事件
+                window.addEventListener('arjs-nft-loaded', () => {
+                    document.getElementById('loader').style.display = 'none';
+                });
+            })
+            .catch(function(err) {
+                alert("无法开启摄像头，请检查浏览器设置或换用手机 Chrome。");
             });
-        };
+        }
 
-        // --- 动作电位逻辑代码 ---
+        // 示波器逻辑 (保持不变)
         const canvas = document.getElementById('wave-canvas');
         const ctx = canvas.getContext('2d');
         const vDisp = document.getElementById('v-display');
-        
-        let points = [{x: 5, y: 95}]; 
-        let v = -70;
-        let active = false;
-        let done = false;
+        let points = [{x: 5, y: 95}]; let v = -70; let active = false; let done = false;
 
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -120,16 +108,12 @@
 
         function startDepol() {
             if(active) return;
-            if(done || points.length > 45) {
-                points = [{x: 5, y: 95}]; v = -70; done = false; draw();
-            }
+            if(done || points.length > 45) { points = [{x: 5, y: 95}]; v = -70; done = false; draw(); }
             active = true;
             document.getElementById('na-ani').setAttribute('visible', 'true');
             let timer = setInterval(() => {
-                v += 5;
-                points.push({x: points[points.length-1].x + 3, y: 95 - ((v+70)*0.75)});
-                vDisp.innerText = Math.min(30, v) + " mV";
-                draw();
+                v += 5; points.push({x: points[points.length-1].x + 3, y: 95 - ((v+70)*0.75)});
+                vDisp.innerText = Math.min(30, v) + " mV"; draw();
                 if(v >= 30) { clearInterval(timer); active = false; }
             }, 50);
         }
@@ -140,10 +124,8 @@
             document.getElementById('na-ani').setAttribute('visible', 'false');
             document.getElementById('k-ani').setAttribute('visible', 'true');
             let timer = setInterval(() => {
-                v -= 5;
-                points.push({x: points[points.length-1].x + 3, y: 95 - ((v+70)*0.75)});
-                vDisp.innerText = v + " mV";
-                draw();
+                v -= 5; points.push({x: points[points.length-1].x + 3, y: 95 - ((v+70)*0.75)});
+                vDisp.innerText = v + " mV"; draw();
                 if(v <= -80) { clearInterval(timer); active = false; }
             }, 50);
         }
@@ -153,10 +135,8 @@
             active = true;
             document.getElementById('k-ani').setAttribute('visible', 'false');
             let timer = setInterval(() => {
-                v += 1;
-                points.push({x: points[points.length-1].x + 3, y: 95 - ((v+70)*0.75)});
-                vDisp.innerText = v + " mV";
-                draw();
+                v += 1; points.push({x: points[points.length-1].x + 3, y: 95 - ((v+70)*0.75)});
+                vDisp.innerText = v + " mV"; draw();
                 if(v >= -70) { clearInterval(timer); active = false; done = true; }
             }, 100);
         }
