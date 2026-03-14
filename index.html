@@ -2,53 +2,126 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>摄像头硬件测试</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>生理学AR - 最终修复版</title>
+    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
     <style>
-        body { margin: 0; background: #000; color: white; text-align: center; font-family: sans-serif; }
-        video { width: 100%; height: auto; background: #222; }
-        #info { padding: 20px; font-size: 14px; color: #0f0; }
-        .error { color: #ff4444; }
+        body { margin: 0; overflow: hidden; background-color: #000; }
+        #monitor-box { position: fixed; top: 10px; left: 10px; width: 170px; height: 110px; background: rgba(0,0,0,0.8); border: 2px solid #00ff00; border-radius: 8px; z-index: 1001; }
+        #v-display { position: absolute; top: 4px; right: 10px; color: #00ff00; font-family: monospace; font-size: 15px; font-weight: bold; }
+        #wave-canvas { width: 100%; height: 100%; }
+        .controls { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 1001; display: flex; gap: 8px; }
+        button { padding: 12px 14px; border-radius: 10px; border: none; font-weight: bold; color: white; cursor: pointer; font-size: 13px; }
+        .btn-na { background: #ff4444; } .btn-k { background: #4444ff; } .btn-rec { background: #4caf50; }
+        /* 隐藏 AR.js 自动生成的加载界面 */
+        .arjs-loader { display: none !important; }
     </style>
 </head>
-<body>
 
-    <div id="info">正在尝试调用后置摄像头...</div>
-    
-    <video id="video" autoplay playsinline></video>
+<body>
+    <div id="monitor-box">
+        <div id="v-display">-70 mV</div>
+        <canvas id="wave-canvas"></canvas>
+    </div>
+
+    <div class="controls">
+        <button class="btn-na" onclick="startDepol()">1. 去极化</button>
+        <button class="btn-k" onclick="startRepol()">2. 复极化</button>
+        <button class="btn-rec" onclick="startRecovery()">3. 恢复期</button>
+    </div>
+
+    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
+        
+        <a-marker type="pattern" url="./pattern-image_0528fe.patt">
+            <a-entity position="0 0 0" scale="0.17 0.17 0.17">
+                <a-text value="OUTSIDE" position="0 2.8 0" align="center" color="#00ffff" width="10" rotation="-90 0 0"></a-text>
+                <a-box position="0 0 0" width="6" height="0.2" depth="2.5" color="#f5d6ba">
+                    <a-cylinder position="-1.8 0 0" radius="0.45" height="0.5" color="#ff4444">
+                        <a-text value="Na+" position="0 0.6 0" align="center" width="6" rotation="-90 0 0"></a-text>
+                    </a-cylinder>
+                    <a-cylinder position="1.8 0 0" radius="0.45" height="0.5" color="#4444ff">
+                        <a-text value="K+" position="0 0.6 0" align="center" width="6" rotation="-90 0 0"></a-text>
+                    </a-cylinder>
+                </a-box>
+                <a-text value="INSIDE" position="0 -2.8 0" align="center" color="#ff00ff" width="10" rotation="-90 0 0"></a-text>
+
+                <a-entity id="na-ani" visible="false">
+                    <a-sphere position="-1.8 2 0" radius="0.15" color="#00fbff" animation="property: position; from: -1.8 2 0; to: -1.8 -2 0; dur: 800; loop: true"></a-sphere>
+                </a-entity>
+                <a-entity id="k-ani" visible="false">
+                    <a-sphere position="1.8 -2 0" radius="0.15" color="#00ff00" animation="property: position; from: 1.8 -2 0; to: 1.8 2 0; dur: 800; loop: true"></a-sphere>
+                </a-entity>
+            </a-entity>
+        </a-marker>
+
+        <a-entity camera></a-entity>
+    </a-scene>
 
     <script>
-        async function startCamera() {
-            const videoElement = document.getElementById('video');
-            const infoElement = document.getElementById('info');
+        // 关键修复：页面加载后，强制再触发一次摄像头唤醒逻辑
+        window.addEventListener('load', function() {
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+            .then(function() {
+                // 唤醒成功后，给 AR 引擎一个 resize 信号，让它把画面铺满
+                setTimeout(() => { window.dispatchEvent(new Event('resize')); }, 500);
+            })
+            .catch(function(err) {
+                console.log("强制唤醒尝试:", err);
+            });
+        });
 
-            const constraints = {
-                video: {
-                    // 强制调用后置摄像头
-                    facingMode: { exact: "environment" }
-                }
-            };
+        // --- 示波器绘制逻辑 (保持原样) ---
+        const canvas = document.getElementById('wave-canvas');
+        const ctx = canvas.getContext('2d');
+        const vDisp = document.getElementById('v-display');
+        let points = [{x: 5, y: 95}]; let v = -70; let active = false; let done = false;
 
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia(constraints);
-                videoElement.srcObject = stream;
-                infoElement.innerText = "后置摄像头启动成功！";
-            } catch (err) {
-                console.error("后置失败，尝试普通模式:", err);
-                
-                // 如果强制后置报错，尝试不限制方向的普通模式
-                try {
-                    const flexibleStream = await navigator.mediaDevices.getUserMedia({ video: true });
-                    videoElement.srcObject = flexibleStream;
-                    infoElement.innerText = "普通模式启动成功（可能调用了前置）";
-                } catch (finalErr) {
-                    infoElement.innerHTML = `<span class="error">启动失败: ${finalErr.name}<br>${finalErr.message}</span>`;
-                }
-            }
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = "#00ff00"; ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.moveTo(points[0].x, points[0].y);
+            for(let p of points) ctx.lineTo(p.x, p.y);
+            ctx.stroke();
+            let last = points[points.length-1];
+            ctx.fillStyle = "red"; ctx.beginPath(); ctx.arc(last.x, last.y, 4, 0, Math.PI*2); ctx.fill();
         }
 
-        // 页面加载完成即刻触发
-        window.addEventListener('load', startCamera);
+        function startDepol() {
+            if(active) return;
+            if(done || points.length > 45) { points = [{x: 5, y: 95}]; v = -70; done = false; draw(); }
+            active = true;
+            document.getElementById('na-ani').setAttribute('visible', 'true');
+            let timer = setInterval(() => {
+                v += 5; points.push({x: points[points.length-1].x + 3, y: 95 - ((v+70)*0.75)});
+                vDisp.innerText = Math.min(30, v) + " mV"; draw();
+                if(v >= 30) { clearInterval(timer); active = false; }
+            }, 50);
+        }
+
+        function startRepol() {
+            if(active || v < 30) return;
+            active = true;
+            document.getElementById('na-ani').setAttribute('visible', 'false');
+            document.getElementById('k-ani').setAttribute('visible', 'true');
+            let timer = setInterval(() => {
+                v -= 5; points.push({x: points[points.length-1].x + 3, y: 95 - ((v+70)*0.75)});
+                vDisp.innerText = v + " mV"; draw();
+                if(v <= -80) { clearInterval(timer); active = false; }
+            }, 50);
+        }
+
+        function startRecovery() {
+            if(active || v != -80) return;
+            active = true;
+            document.getElementById('k-ani').setAttribute('visible', 'false');
+            let timer = setInterval(() => {
+                v += 1; points.push({x: points[points.length-1].x + 3, y: 95 - ((v+70)*0.75)});
+                vDisp.innerText = v + " mV"; draw();
+                if(v >= -70) { clearInterval(timer); active = false; done = true; }
+            }, 100);
+        }
+        canvas.width = 170; canvas.height = 110; draw();
     </script>
 </body>
 </html>
