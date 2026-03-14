@@ -3,12 +3,10 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <!-- 关键修复1：添加安全策略元标签，允许摄像头访问 -->
-    <meta http-equiv="Content-Security-Policy" content="default-src *; script-src * 'unsafe-inline'; style-src * 'unsafe-inline'; media-src * blob:; connect-src *">
-    <title>生理学AR - 最终修复版</title>
+    <title>生理学AR - 手机兼容版</title>
+    <!-- 换回标准AR.js，避免nft版本的兼容性问题 -->
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
-    <!-- 关键修复2：使用稳定版AR.js CDN，避免raw.githack的兼容性问题 -->
-    <script src="https://cdn.jsdelivr.net/npm/ar.js@2.3.0/aframe/build/aframe-ar-nft.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ar.js@2.3.0/aframe/build/aframe-ar.js"></script>
     <style>
         body { margin: 0; overflow: hidden; background-color: #000; }
         #monitor-box { position: fixed; top: 10px; left: 10px; width: 170px; height: 110px; background: rgba(0,0,0,0.8); border: 2px solid #00ff00; border-radius: 8px; z-index: 1001; }
@@ -17,18 +15,11 @@
         .controls { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 1001; display: flex; gap: 8px; }
         button { padding: 12px 14px; border-radius: 10px; border: none; font-weight: bold; color: white; cursor: pointer; font-size: 13px; }
         .btn-na { background: #ff4444; } .btn-k { background: #4444ff; } .btn-rec { background: #4caf50; }
-        /* 临时显示加载界面，方便调试 */
-        .arjs-loader { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 100; text-align: center; color: white; }
+        /* 隐藏加载界面，让AR.js自己处理 */
+        .arjs-loader { display: none !important; }
     </style>
 </head>
-
 <body>
-    <!-- 恢复AR.js加载界面，便于调试 -->
-    <div class="arjs-loader">
-        <p>正在启动摄像头...</p>
-        <canvas width="200" height="200"></canvas>
-    </div>
-
     <div id="monitor-box">
         <div id="v-display">-70 mV</div>
         <canvas id="wave-canvas"></canvas>
@@ -40,20 +31,8 @@
         <button class="btn-rec" onclick="startRecovery()">3. 恢复期</button>
     </div>
 
-    <!-- 关键修复3：完善AR.js配置，指定后置摄像头、分辨率、关闭调试 -->
-    <a-scene 
-        embedded 
-        arjs="
-            sourceType: webcam;
-            videoTexture: true;
-            videoWidth: 1280;
-            videoHeight: 720;
-            facingMode: environment;
-            debugUIEnabled: false;
-            detectionMode: mono_and_matrix;
-            matrixCodeType: 3x3;
-        "
-    >
+    <!-- 极简AR配置：只保留核心参数，让AR.js自动处理摄像头 -->
+    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono;">
         <a-marker type="pattern" url="./pattern-image_0528fe.patt">
             <a-entity position="0 0 0" scale="0.17 0.17 0.17">
                 <a-text value="OUTSIDE" position="0 2.8 0" align="center" color="#00ffff" width="10" rotation="-90 0 0"></a-text>
@@ -75,54 +54,12 @@
                 </a-entity>
             </a-entity>
         </a-marker>
-
-        <a-entity camera look-controls="enabled: false"></a-entity>
+        <a-entity camera></a-entity>
     </a-scene>
 
     <script>
-        // 关键修复4：重构摄像头初始化逻辑，确保AR场景加载完成后再请求权限
-        document.addEventListener('DOMContentLoaded', async function() {
-            // 等待AR.js初始化完成
-            await new Promise(resolve => {
-                const checkAR = setInterval(() => {
-                    if (window.ARjs && document.querySelector('a-scene').systems.arjs) {
-                        clearInterval(checkAR);
-                        resolve();
-                    }
-                }, 100);
-            });
-
-            try {
-                // 请求后置摄像头权限
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: {
-                        facingMode: { exact: 'environment' }, // 强制后置摄像头
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 }
-                    },
-                    audio: false
-                });
-
-                // 将流绑定到AR场景
-                const arSystem = document.querySelector('a-scene').systems.arjs;
-                if (arSystem && arSystem.source) {
-                    arSystem.source.domElement.srcObject = stream;
-                    arSystem.source.domElement.play();
-                }
-
-                // 触发resize确保画面适配
-                setTimeout(() => {
-                    window.dispatchEvent(new Event('resize'));
-                }, 300);
-
-                console.log("摄像头初始化成功");
-            } catch (err) {
-                console.error("摄像头初始化失败:", err);
-                alert("无法访问摄像头！请检查：1.是否授予权限 2.是否使用HTTPS 3.浏览器是否支持");
-            }
-        });
-
-        // --- 示波器绘制逻辑 (保持原样) ---
+        // 完全移除手动摄像头逻辑，交给AR.js原生处理
+        // 只保留示波器和按钮逻辑
         const canvas = document.getElementById('wave-canvas');
         const ctx = canvas.getContext('2d');
         const vDisp = document.getElementById('v-display');
@@ -173,6 +110,11 @@
             }, 100);
         }
         canvas.width = 170; canvas.height = 110; draw();
+
+        // 监听AR场景就绪，确保界面正常显示
+        document.querySelector('a-scene').addEventListener('loaded', function () {
+            console.log('AR场景加载完成');
+        });
     </script>
 </body>
 </html>
