@@ -47,10 +47,10 @@
                 <a-text value="INSIDE" position="0 -2.8 0" align="center" color="#ff00ff" width="10" rotation="-90 0 0"></a-text>
 
                 <a-entity id="na-ani" visible="false">
-                    <a-sphere position="-1.8 1.5 0" radius="0.15" color="#00fbff" animation="property: position; from: -1.8 1.5 0; to: -1.8 -1.5 0; dur: 800; loop: true"></a-sphere>
+                    <a-sphere position="-1.8 2 0" radius="0.15" color="#00fbff" animation="property: position; from: -1.8 2 0; to: -1.8 -2 0; dur: 800; loop: true"></a-sphere>
                 </a-entity>
                 <a-entity id="k-ani" visible="false">
-                    <a-sphere position="1.8 -1.5 0" radius="0.15" color="#00ff00" animation="property: position; from: 1.8 -1.5 0; to: 1.8 1.5 0; dur: 800; loop: true"></a-sphere>
+                    <a-sphere position="1.8 -2 0" radius="0.15" color="#00ff00" animation="property: position; from: 1.8 -2 0; to: 1.8 2 0; dur: 800; loop: true"></a-sphere>
                 </a-entity>
             </a-entity>
         </a-marker>
@@ -60,9 +60,8 @@
     <script>
         function initCamera() {
             document.getElementById('start-btn').style.display = 'none';
-            // 关键：连续触发两次 resize，强制浏览器重绘摄像头层
+            // 保持最简单的 resize 触发
             window.dispatchEvent(new Event('resize'));
-            setTimeout(() => { window.dispatchEvent(new Event('resize')); }, 500);
         }
 
         const canvas = document.getElementById('wave-canvas');
