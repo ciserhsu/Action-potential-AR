@@ -7,7 +7,6 @@
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
     <style>
-        /* 强制覆盖，确保背景不是白色 */
         body { background-color: black; margin: 0; overflow: hidden; }
         #monitor-box { position: fixed; top: 10px; left: 10px; width: 170px; height: 110px; background: rgba(0,0,0,0.85); border: 2px solid #00ff00; border-radius: 8px; z-index: 1001; }
         #v-display { position: absolute; top: 4px; right: 10px; color: #00ff00; font-family: monospace; font-size: 15px; font-weight: bold; }
@@ -15,8 +14,6 @@
         .controls { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 1001; display: flex; gap: 8px; }
         button { padding: 12px 14px; border-radius: 10px; border: none; font-weight: bold; color: white; cursor: pointer; font-size: 13px; }
         .btn-na { background: #ff4444; } .btn-k { background: #4444ff; } .btn-rec { background: #4caf50; }
-        
-        /* 手机强制启动按钮 */
         #start-btn { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 20px; background: #2196F3; color: white; z-index: 9999; border-radius: 10px; border: none; font-size: 18px; }
     </style>
 </head>
@@ -63,7 +60,8 @@
     <script>
         function initCamera() {
             document.getElementById('start-btn').style.display = 'none';
-            window.dispatchEvent(new Event('resize'));
+            // 延时重置一下渲染引擎，防止黑屏
+            setTimeout(() => { window.dispatchEvent(new Event('resize')); }, 500);
         }
 
         const canvas = document.getElementById('wave-canvas');
