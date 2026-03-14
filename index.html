@@ -35,7 +35,10 @@
         <button class="btn-rec" onclick="startRecovery()">3. 恢复期</button>
     </div>
 
-    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false; trackingMethod: best;" vr-mode-ui="enabled: false">
+    <a-scene 
+        embedded 
+        arjs="sourceType: webcam; debugUIEnabled: false; trackingMethod: best; sourceWidth:1280; sourceHeight:720; displayWidth:1280; displayHeight:720;" 
+        vr-mode-ui="enabled: false">
         
         <a-nft
             type="nft"
