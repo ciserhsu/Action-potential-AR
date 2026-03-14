@@ -2,9 +2,9 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>神经动作电位 AR 教学版</title>
+    <title>神经动作电位 AR 教学版 (NFT课本版)</title>
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@master/aframe/build/aframe-ar.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
     <style>
         #monitor-box {
             position: fixed; top: 10px; left: 10px; width: 170px; height: 110px;
@@ -15,10 +15,15 @@
         .controls { position: fixed; bottom: 35px; left: 50%; transform: translateX(-50%); z-index: 1001; display: flex; gap: 8px; }
         button { padding: 12px 14px; border-radius: 10px; border: none; font-weight: bold; color: white; cursor: pointer; font-size: 13px; }
         .btn-na { background: #ff4444; } .btn-k { background: #4444ff; } .btn-rec { background: #4caf50; }
+        /* NFT 加载提示 */
+        .arjs-loader { height: 100%; width: 100%; position: absolute; top: 0; left: 0; background-color: rgba(0, 0, 0, 0.8); z-index: 9999; display: flex; justify-content: center; align-items: center; }
+        .arjs-loader div { text-align: center; font-size: 1.25em; color: white; }
     </style>
 </head>
 
 <body style="margin: 0; overflow: hidden;">
+    <div class="arjs-loader"><div>正在加载课本识别数据，请稍候...</div></div>
+
     <div id="monitor-box">
         <div id="v-display">-70 mV</div>
         <canvas id="wave-canvas"></canvas>
@@ -30,11 +35,17 @@
         <button class="btn-rec" onclick="startRecovery()">3. 恢复期</button>
     </div>
 
-    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;" vr-mode-ui="enabled: false">
+    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false; trackingMethod: best;" vr-mode-ui="enabled: false">
         
-        <a-marker preset="hiro">
+        <a-nft
+            type="nft"
+            url="./action_potential"
+            smooth="true"
+            smoothCount="10"
+            smoothTolerance=".01"
+            smoothThreshold="5">
             
-            <a-entity rotation="-90 0 0" position="0 0 0" scale="0.08 0.08 0.08">
+            <a-entity rotation="-90 0 0" position="100 0 -100" scale="20 20 20">
                 <a-text value="OUTSIDE" position="0 2.8 0" align="center" color="#00ffff" width="12"></a-text>
                 
                 <a-box position="0 0 0" width="6" height="0.5" depth="2.5" color="#f5d6ba">
@@ -55,11 +66,13 @@
                     <a-sphere position="1.8 -2.5 0" radius="0.18" color="#00ff00" animation="property: position; from: 1.8 -2.5 0; to: 1.8 2.5 0; dur: 800; loop: true"></a-sphere>
                 </a-entity>
             </a-entity>
-        </a-marker>
+        </a-nft>
+
         <a-entity camera></a-entity>
     </a-scene>
 
     <script>
+        // 脚本部分完全保留您之前的逻辑
         const canvas = document.getElementById('wave-canvas');
         const ctx = canvas.getContext('2d');
         const vDisp = document.getElementById('v-display');
@@ -81,7 +94,6 @@
 
         function startDepol() {
             if(active) return;
-            // 老师，这里实现了您的需求：再次点击 1 且已完成过，则清屏重绘
             if(done || points.length > 45) {
                 points = [{x: 5, y: 95}]; v = -70; done = false; draw();
             }
@@ -126,4 +138,3 @@
     </script>
 </body>
 </html>
-
