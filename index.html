@@ -8,27 +8,16 @@
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
     <style>
         body { margin: 0; overflow: hidden; background: #000; }
-        /* 透明遮罩层：引导用户点击以激活移动端权限 */
-        #force-start-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.7); color: #00ff00;
-            z-index: 9999; display: flex; align-items: center; justify-content: center;
-            font-family: sans-serif; font-size: 20px; cursor: pointer;
-        }
         #monitor-box { position: fixed; top: 10px; left: 10px; width: 170px; height: 110px; background: rgba(0,0,0,0.8); border: 2px solid #00ff00; border-radius: 8px; z-index: 1001; }
         #v-display { position: absolute; top: 4px; right: 10px; color: #00ff00; font-family: monospace; font-size: 15px; font-weight: bold; }
         #wave-canvas { width: 100%; height: 100%; }
         .controls { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 1001; display: flex; gap: 8px; }
-        button { padding: 12px 14px; border-radius: 10px; border: none; font-weight: bold; color: white; font-size: 13px; }
+        button { padding: 12px 14px; border-radius: 10px; border: none; font-weight: bold; color: white; cursor: pointer; font-size: 13px; }
         .btn-na { background: #ff4444 !important; } .btn-k { background: #4444ff !important; } .btn-rec { background: #4caf50 !important; }
     </style>
 </head>
 
 <body>
-    <div id="force-start-overlay" onclick="startMobileCamera()">
-        点击此处开启 AR 实验课
-    </div>
-
     <div id="monitor-box">
         <div id="v-display">-70 mV</div>
         <canvas id="wave-canvas"></canvas>
@@ -40,7 +29,7 @@
         <button class="btn-rec" onclick="startRecovery()">3. 恢复</button>
     </div>
 
-    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false; trackingMethod: best;">
+    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
         <a-marker type="pattern" url="./Action_potential.patt">
             <a-entity position="0 0 0" scale="0.17 0.17 0.17">
                 <a-box position="0 0 0" width="6" height="0.2" depth="2.5" color="#f5d6ba">
@@ -66,30 +55,7 @@
     </a-scene>
 
     <script>
-        // 专门解决手机端不启动摄像头的函数
-        async function startMobileCamera() {
-            try {
-                // 1. 尝试获取底层媒体权限
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-                
-                // 2. 隐藏覆盖层
-                document.getElementById('force-start-overlay').style.display = 'none';
-                
-                // 3. 强制关联流给 AR.js 自动生成的 video 标签
-                let arVideo = document.querySelector('video');
-                if (arVideo) {
-                    arVideo.srcObject = stream;
-                    arVideo.play();
-                }
-                
-                // 4. 强制重置窗口大小以触发渲染
-                window.dispatchEvent(new Event('resize'));
-            } catch (err) {
-                alert("手机权限提示：请确保在 HTTPS 链接下访问，并允许摄像头权限。详情：" + err.message);
-            }
-        }
-
-        // 示波器绘制逻辑（保持您的原始稳定版本）
+        // 示波器逻辑
         const canvas = document.getElementById('wave-canvas');
         const ctx = canvas.getContext('2d');
         const vDisp = document.getElementById('v-display');
