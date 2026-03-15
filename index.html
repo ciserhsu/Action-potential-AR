@@ -5,9 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>神经细胞动作电位</title>
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/ar.js@2.3.0/aframe/build/aframe-ar.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
     <style>
         body { margin: 0; overflow: hidden; background-color: #000; }
+        /* 强制唤醒层：点击此处即可激活摄像头 */
+        #camera-wake-up {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); color: white;
+            display: flex; align-items: center; justify-content: center;
+            z-index: 9999; font-size: 18px; font-weight: bold; text-align: center;
+            cursor: pointer;
+        }
         #monitor-box { 
             position: fixed; top: 10px; left: 10px; 
             width: 170px; height: 110px; 
@@ -39,6 +47,10 @@
     </style>
 </head>
 <body>
+    <div id="camera-wake-up" onclick="forceStartCamera()">
+        【 画面未显示？点击屏幕开启 AR 】
+    </div>
+
     <div id="monitor-box">
         <div id="v-display">-70 mV</div>
         <canvas id="wave-canvas"></canvas>
@@ -50,94 +62,98 @@
         <button class="btn-rec" onclick="startRecovery()">3. 恢复</button>
     </div>
 
-    <!-- 关键修正：用无空格的文件名 Action_potential.patt -->
     <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
         <a-marker type="pattern" url="./Action_potential.patt">
-            <a-box position="0 0 0" width="6" height="0.2" depth="2.5" color="#f5d6ba">
-                <a-cylinder position="-1.8 0 0" radius="0.45" height="0.5" color="#ff4444">
-                    <a-text value="Na+" position="0 0.6 0" align="center" width="6" rotation="-90 0 0"></a-text>
-                </a-cylinder>
-                <a-cylinder position="1.8 0 0" radius="0.45" height="0.5" color="#4444ff">
-                    <a-text value="K+" position="0 0.6 0" align="center" width="6" rotation="-90 0 0"></a-text>
-                </a-cylinder>
-                <a-text value="OUTSIDE" position="0 2.8 0" align="center" color="#00ffff" width="10" rotation="-90 0 0"></a-text>
-                <a-text value="INSIDE" position="0 -2.8 0" align="center" color="#ff00ff" width="10" rotation="-90 0 0"></a-text>
-                <a-entity id="na-ani" visible="false">
-                    <a-sphere position="-1.8 2 0" radius="0.15" color="#00fbff" 
-                              animation="property: position; from: -1.8 2 0; to: -1.8 -2 0; dur: 800; loop: true"></a-sphere>
-                </a-entity>
-                <a-entity id="k-ani" visible="false">
-                    <a-sphere position="1.8 -2 0" radius="0.15" color="#00ff00" 
-                              animation="property: position; from: 1.8 -2 0; to: 1.8 2 0; dur: 800; loop: true"></a-sphere>
-                </a-entity>
-            </a-box>
+            <a-entity position="0 0 0" scale="0.17 0.17 0.17">
+                <a-box position="0 0 0" width="6" height="0.2" depth="2.5" color="#f5d6ba">
+                    <a-cylinder position="-1.8 0 0" radius="0.45" height="0.5" color="#ff4444">
+                        <a-text value="Na+" position="0 0.6 0" align="center" width="6" rotation="-90 0 0"></a-text>
+                    </a-cylinder>
+                    <a-cylinder position="1.8 0 0" radius="0.45" height="0.5" color="#4444ff">
+                        <a-text value="K+" position="0 0.6 0" align="center" width="6" rotation="-90 0 0"></a-text>
+                    </a-cylinder>
+                    <a-text value="OUTSIDE" position="0 2.8 0" align="center" color="#00ffff" width="10" rotation="-90 0 0"></a-text>
+                    <a-text value="INSIDE" position="0 -2.8 0" align="center" color="#ff00ff" width="10" rotation="-90 0 0"></a-text>
+                    <a-entity id="na-ani" visible="false">
+                        <a-sphere position="-1.8 2 0" radius="0.15" color="#00fbff" 
+                                  animation="property: position; from: -1.8 2 0; to: -1.8 -2 0; dur: 800; loop: true"></a-sphere>
+                    </a-entity>
+                    <a-entity id="k-ani" visible="false">
+                        <a-sphere position="1.8 -2 0" radius="0.15" color="#00ff00" 
+                                  animation="property: position; from: 1.8 -2 0; to: 1.8 2 0; dur: 800; loop: true"></a-sphere>
+                    </a-entity>
+                </a-box>
+            </a-entity>
         </a-marker>
         <a-entity camera></a-entity>
     </a-scene>
 
     <script>
+        // 关键：强制启动摄像头权限的函数
+        async function forceStartCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                // 隐藏启动提示层
+                document.getElementById('camera-wake-up').style.display = 'none';
+                // 提示 AR 引擎重绘画面
+                window.dispatchEvent(new Event('resize'));
+            } catch (err) {
+                alert("摄像头开启失败，请检查浏览器权限设置");
+            }
+        }
+
         window.addEventListener('load', function() {
-            setTimeout(() => {
-                const canvas = document.getElementById('wave-canvas');
-                const ctx = canvas.getContext('2d');
-                const vDisp = document.getElementById('v-display');
-                let points = [{x: 5, y: 95}]; 
-                let v = -70; 
-                let active = false; 
-                let done = false;
+            const canvas = document.getElementById('wave-canvas');
+            const ctx = canvas.getContext('2d');
+            const vDisp = document.getElementById('v-display');
+            let points = [{x: 5, y: 95}]; let v = -70; let active = false; let done = false;
 
-                function draw() {
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
-                    ctx.strokeStyle = "#00ff00"; 
-                    ctx.lineWidth = 3;
-                    ctx.beginPath(); 
-                    ctx.moveTo(points[0].x, points[0].y);
-                    for(let p of points) ctx.lineTo(p.x, p.y);
-                    ctx.stroke();
-                    let last = points[points.length-1];
-                    ctx.fillStyle = "red"; 
-                    ctx.beginPath(); 
-                    ctx.arc(last.x, last.y, 4, 0, Math.PI*2); 
-                    ctx.fill();
-                }
+            function draw() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.strokeStyle = "#00ff00"; ctx.lineWidth = 3;
+                ctx.beginPath(); ctx.moveTo(points[0].x, points[0].y);
+                for(let p of points) ctx.lineTo(p.x, p.y);
+                ctx.stroke();
+                let last = points[points.length-1];
+                ctx.fillStyle = "red"; ctx.beginPath(); ctx.arc(last.x, last.y, 4, 0, Math.PI*2); ctx.fill();
+            }
 
-                window.startDepol = function() {
-                    if(active) return;
-                    if(done || points.length > 45) { points = [{x: 5, y: 95}]; v = -70; done = false; draw(); }
-                    active = true;
-                    document.getElementById('na-ani').setAttribute('visible', 'true');
-                    let timer = setInterval(() => {
-                        v += 5; points.push({x: points[points.length-1].x + 3, y: 95 - ((v+70)*0.75)});
-                        vDisp.innerText = Math.min(30, v) + " mV"; draw();
-                        if(v >= 30) { clearInterval(timer); active = false; }
-                    }, 50);
-                };
+            window.startDepol = function() {
+                if(active) return;
+                if(done || points.length > 45) { points = [{x: 5, y: 95}]; v = -70; done = false; draw(); }
+                active = true;
+                document.getElementById('na-ani').setAttribute('visible', 'true');
+                let timer = setInterval(() => {
+                    v += 5; points.push({x: points[points.length-1].x + 3, y: 95 - ((v+70)*0.75)});
+                    vDisp.innerText = Math.min(30, v) + " mV"; draw();
+                    if(v >= 30) { clearInterval(timer); active = false; }
+                }, 50);
+            };
 
-                window.startRepol = function() {
-                    if(active || v < 30) return;
-                    active = true;
-                    document.getElementById('na-ani').setAttribute('visible', 'false');
-                    document.getElementById('k-ani').setAttribute('visible', 'true');
-                    let timer = setInterval(() => {
-                        v -= 5; points.push({x: points[points.length-1].x + 3, y: 95 - ((v+70)*0.75)});
-                        vDisp.innerText = v + " mV"; draw();
-                        if(v <= -80) { clearInterval(timer); active = false; }
-                    }, 50);
-                };
+            window.startRepol = function() {
+                if(active || v < 30) return;
+                active = true;
+                document.getElementById('na-ani').setAttribute('visible', 'false');
+                document.getElementById('k-ani').setAttribute('visible', 'true');
+                let timer = setInterval(() => {
+                    v -= 5; points.push({x: points[points.length-1].x + 3, y: 95 - ((v+70)*0.75)});
+                    vDisp.innerText = v + " mV"; draw();
+                    if(v <= -80) { clearInterval(timer); active = false; }
+                }, 50);
+            };
 
-                window.startRecovery = function() {
-                    if(active || v != -80) return;
-                    active = true;
-                    document.getElementById('k-ani').setAttribute('visible', 'false');
-                    let timer = setInterval(() => {
-                        v += 1; points.push({x: points[points.length-1].x + 3, y: 95 - ((v+70)*0.75)});
-                        vDisp.innerText = v + " mV"; draw();
-                        if(v >= -70) { clearInterval(timer); active = false; done = true; }
-                    }, 100);
-                };
+            window.startRecovery = function() {
+                if(active || v != -80) return;
+                active = true;
+                document.getElementById('k-ani').setAttribute('visible', 'false');
+                let timer = setInterval(() => {
+                    v += 1; points.push({x: points[points.length-1].x + 3, y: 95 - ((v+70)*0.75)});
+                    vDisp.innerText = v + " mV"; draw();
+                    if(v >= -70) { clearInterval(timer); active = false; done = true; }
+                }, 100);
+            };
 
-                canvas.width = 170; canvas.height = 110; draw();
-            }, 500);
+            canvas.width = 170; canvas.height = 110; draw();
         });
     </script>
 </body>
